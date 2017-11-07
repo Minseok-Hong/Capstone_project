@@ -4,3 +4,4 @@
 Elevator System 
 
 
+tmpLogic.c : This file is Algorithm for elevator scheduling
