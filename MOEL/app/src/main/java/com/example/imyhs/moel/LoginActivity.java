@@ -41,7 +41,7 @@ public class LoginActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View v) {
-                String userID = idText.getText().toString();
+                final String userID = idText.getText().toString();
                 String userPassword = passwordText.getText().toString();
 
                 Response.Listener<String> responseListener = new Response.Listener<String>() {
@@ -59,8 +59,15 @@ public class LoginActivity extends AppCompatActivity {
                                         .create();
 
                                 dialog.show();
-                                Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                LoginActivity.this.startActivity(intent);
+
+                                if(userID.equals("admin"))
+                                {
+                                    Intent intentAdmin = new Intent(LoginActivity.this, AdminActivity.class);
+                                    LoginActivity.this.startActivity(intentAdmin);
+                                }else {
+                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+                                    LoginActivity.this.startActivity(intent);
+                                }
                                 finish();
                             }
                             else{
