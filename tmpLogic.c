@@ -6,7 +6,12 @@
 #include <termios.h>
 #include <limits.h>
 #include <math.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
 
+#define  BUFF_SIZE   1024
+#define MAX_BUILDING 100 //서버에서 가동할 수 있는 최대 빌딩의 수
 #define FLOOR 20
 #define NUM_ELEVATORS 6
 #define MAX_PEOPLE 15 // 엘리베이터 정원
@@ -72,12 +77,13 @@ typedef struct _SIMUL
 {
     Elevator **elevators;
     Input *input;
-} Simul; // 시뮬레이션 구조체 
+} Simul; // 시뮬레이션 구조체
 
 ///////////////////////////////////////////////////////////////////////
+void socket_server();
 void get_request(Input *input);
 void init(Input **input, Simul **simul, Elevator *elevators[6]);
-void insert_into_queue(int current_floor, int dest_floor, int num_people);
+void insert_into_queue(int current_floor, int dest_floor, int num_pecp ople);
 void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people);
 //////////////////////////////////////////////////////////////////////
 
@@ -87,9 +93,13 @@ int flag = 0;
 int main()
 {
 	Input *input;
-    Simul *simul;
-
+  Simul *simul;
 	Elevator *elevators[6];
+
+  pthread_t socket_thr;
+  pthread_t simul_thr;
+  int tid_input;
+  int tid_simul;
 
 	init(&input, &simul,elevators);
 	get_request(input);
@@ -97,7 +107,46 @@ int main()
 
 }
 
-void tmpAlgorithrm(){
+void socket_server(){
+  //여기서 php랑 통신을 통해 파라미터를 받는다.
+  int   client_socket;
+
+  struct sockaddr_in   server_addr;
+
+  char   buff[BUFF_SIZE+5];
+
+  int building_id;
+  int req_current_floor;
+  int req_dest_floor;
+  int req_num_people;
+
+  client_socket  = socket( PF_INET, SOCK_STREAM, 0);
+	if( -1 == client_socket){
+
+		printf( "socket creat fail\n");
+		exit( 1);
+	}
+
+	memset( &server_addr, 0, sizeof( server_addr));
+	server_addr.sin_family     = AF_INET;
+	server_addr.sin_port       = htons( 60000);
+	server_addr.sin_addr.s_addr= inet_addr( "127.0.0.1");
+
+	if( -1 == connect( client_socket, (struct sockaddr*)&server_addr, sizeof( server_addr) ) ){
+
+		printf( "connect fail\n");
+		exit( 1);
+	}
+
+	write( client_socket, argv[1], strlen( argv[1])+1);
+	read ( client_socket, buff, BUFF_SIZE);
+	printf( "PHP BUFFER == %s\n", buff);
+	close( client_socket);
+
+
+}
+
+void C_SCAN(){
 
 
 
