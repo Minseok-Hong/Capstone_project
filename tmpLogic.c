@@ -9,8 +9,9 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
+#include "/usr/include/mysql/mysql.h"
 
-#define  BUFF_SIZE   1024
+#define BUFF_SIZE   1024
 #define MAX_BUILDING 100 //서버에서 가동할 수 있는 최대 빌딩의 수
 #define FLOOR 20
 #define NUM_ELEVATORS 6
@@ -68,6 +69,7 @@ typedef struct _ELEVATOR
 typedef struct _INPUT
 {
     char *mode;
+    int *req_elevator_id;
     int *req_current_floor;
     int *req_dest_floor;
     int *req_num_people;
@@ -80,10 +82,11 @@ typedef struct _SIMUL
 } Simul; // 시뮬레이션 구조체
 
 ///////////////////////////////////////////////////////////////////////
+int DBconector(int id);
 void socket_server();
 void get_request(Input *input);
 void init(Input **input, Simul **simul, Elevator *elevators[6]);
-void insert_into_queue(int current_floor, int dest_floor, int num_pecp ople);
+void insert_into_queue(int current_floor, int dest_floor, int num_people);
 void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people);
 //////////////////////////////////////////////////////////////////////
 
@@ -93,17 +96,62 @@ int flag = 0;
 int main()
 {
 	Input *input;
-  Simul *simul;
+	Simul *simul;
 	Elevator *elevators[6];
 
-  pthread_t socket_thr;
-  pthread_t simul_thr;
-  int tid_input;
-  int tid_simul;
+  	pthread_t socket_thr;
+  	pthread_t simul_thr;
+  	int tid_input;
+  	int tid_simul;
+  	//원래는 소켓통신으로 할 예정이지만 현재는 알고리즘이 잘 돌아가는지 볼것이므로 scanf를 받아서 실행한다.
+
 
 	init(&input, &simul,elevators);
 	get_request(input);
 	insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
+
+}
+
+int DBconector(int id){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+   if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   }
+
+   res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL)
+  		printf("%s \n",row[0]);
+
+
+  	if(mysql_query(conn,"SELECT * FROM user"))
+  	{
+  	        return 1;
+  	}
+
+  	res = mysql_use_result(conn);
+
+   	printf("Returning List of Names : \n");
+   	while((row = mysql_fetch_row(res)) != NULL)
+		printf("%s \n",row[0]);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+   return row[0];
 
 }
 
@@ -138,7 +186,7 @@ void socket_server(){
 		exit( 1);
 	}
 
-	write( client_socket, argv[1], strlen( argv[1])+1);
+	//write( client_socket, argv[1], strlen( argv[1])+1);
 	read ( client_socket, buff, BUFF_SIZE);
 	printf( "PHP BUFFER == %s\n", buff);
 	close( client_socket);
@@ -213,7 +261,7 @@ void get_request(Input *input)
         printf("\n엘리베이터 호출 모드 \n");
         printf("현재 층, 목적 층, 몇 명이 타는지 입력하시오 : ");
         fflush(stdout);
-        scanf("%d %d %d", input->req_current_floor, input->req_dest_floor, input->req_num_people);
+        scanf("%d %d %d %d",input->req_elevator_id, input->req_current_floor, input->req_dest_floor, input->req_num_people);
         tcflush(0, TCIFLUSH);
         *input->mode = 0;
         flag = 1;
