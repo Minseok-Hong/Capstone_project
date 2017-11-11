@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class LoginRequest extends StringRequest{
 
-    final static private String URL = "웹서버주소PHP";
+    final static private String URL = "웹서버주소PHP/UserLogin.php";
     private Map<String, String> parameters;
 
     public LoginRequest(String userID, String userPassword, Response.Listener<String> listener){

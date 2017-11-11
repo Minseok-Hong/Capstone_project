@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class ValidateRequest extends StringRequest{
 
-    final static private String URL = "웹서버주소PHP";
+    final static private String URL = "웹서버주소PHP/UserValidate.php";
     private Map<String, String> parameters;
 
     public ValidateRequest(String userID, Response.Listener<String> listener){
