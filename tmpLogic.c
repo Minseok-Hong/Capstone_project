@@ -120,8 +120,10 @@ int main()
 	pthread_t input_thr;
   	pthread_t socket_thr;
   	pthread_t simul_thr[MAX_BUILDING];
+  	//pthread_t simul_thr;
   	int tid_input;
   	int tid_simul[MAX_BUILDING];
+  	//int tid_simul;
   	//원래는 소켓통신으로 할 예정이지만 현재는 알고리즘이 잘 돌아가는지 볼것이므로 scanf를 받아서 실행한다.
 
 
@@ -137,6 +139,7 @@ int main()
     	//현재 등록된 건물의 수만큼 thread를 생성한다.
 
     	tid_simul[i] = pthread_create(&simul_thr[i], NULL, simul_f, (void *)simul);
+    	//tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
     	printf("%d Thread Creat\n",i);
     	if (tid_simul[i] != 0){
        	perror("thread creation error: ");
@@ -149,9 +152,11 @@ int main()
 	//DBconector(input->building_id);
 	
 	pthread_join(input_thr, NULL);
+	//pthread_join(simul_thr, NULL);
 	for(int i = 0 ; i < MAX_BUILDING;i++){
 
 		pthread_join(simul_thr[i], NULL);
+		//pthread_join(simul_thr, NULL);
 	}
     
 
@@ -198,15 +203,17 @@ void *simul_f(void *data){
     F_node *location;   // 요청이 들어가는 위치
     Request current;    // 처리할 요청
 
+
     while(1){
     	if (*simul->input->mode == CALL)
         {
             get_request(simul->input);
         }
-        insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
 
+        insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
         if (R_list_size(reqs) != 0)
         {
+        	
             current = *R_list_remove(reqs);
             response = LOOK(simul->elevators, &current);
             // 요청에 응답하는 엘리베이터에 정보 추가하기
@@ -221,7 +228,6 @@ void *simul_f(void *data){
 
         // 엘리베이터 이동시키기
         move_elevator(simul->elevators);
-
         sleep(1);
 
 
@@ -297,23 +303,13 @@ void move_elevator(Elevator *elevators[6])
     F_node *next_floor;
     F_node *pair;
 
-    // 1. 다음 목적지를 구한다(있으면).
-    // 1-1. 수리 요청인 경우 수리에 들어간다.
-    // 2. 현재 층과 비교하여,
-    // 3. 높으면 현재층 증가, 낮으면 감소, 같으면 사람을 태운다.
-    // 4. 사람을 다 못 태우면 최대 수용 가능 인원만 태운다.
-    // 4-1. 다 못 타고 남은 인원은 다시 엘리베이터를 호출한다.
-
+    
     for (i = 0; i < NUM_ELEVATORS; i++)
     {
-        if (elevators[i]->fix)
-        {
-            //fix_elevator(elevators[i]);
-            continue;
-        }
 
         if (F_list_size(elevators[i]->pending) > 0)
         {
+
             next_floor = F_list_peek(elevators[i]->pending);
             if (next_floor->floor == -1)
             {
@@ -375,6 +371,7 @@ void move_elevator(Elevator *elevators[6])
             }
         }
     }
+
 }
 
 void socket_server(){
@@ -469,9 +466,9 @@ void init(Input **input, Simul **simul, Elevator *elevators[6])
     elevators[4]->next_dest = 11;
     elevators[5]->current_floor = 11;
     elevators[5]->next_dest = 11;
-
-    (*simul)->elevators = elevators;
 	*/
+    (*simul)->elevators = elevators;
+	
 }
 
 int find_time(F_list list, F_node *target, int start, int end)
