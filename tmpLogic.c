@@ -82,9 +82,12 @@ typedef struct _SIMUL
     Input *input;
 } Simul; // 시뮬레이션 구조체
 
+
+int building_pid[MAX_BUILDING];
 ///////////////////////////////////////////////////////////////////////
 Elevator *LOOK(Elevator *elevators[6], Request *current);
 Elevator *C_SCAN(Elevator *elevators[6], Request *current);
+Elevator *cluster(Elevator *elevators[6], Request *current);
 void *simul_f(void *data);
 void *input_f(void *data);
 int DBconector(int id);
@@ -105,7 +108,7 @@ int find_min(int *arr, int n);
 Request *R_list_remove(R_list list);
 int R_list_size(R_list list);
 F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target);
-F_node *find_ideal_location(Elevator *elevator, int start_floor, int dest_floor, int target);
+F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_floor, int target);
 //////////////////////////////////////////////////////////////////////
 
 R_list reqs;
@@ -119,11 +122,10 @@ int main()
 
 	pthread_t input_thr;
   	pthread_t socket_thr;
-  	pthread_t simul_thr[MAX_BUILDING];
-  	//pthread_t simul_thr;
+  	pthread_t simul_thr;
+  	
   	int tid_input;
-  	int tid_simul[MAX_BUILDING];
-  	//int tid_simul;
+  	int tid_simul;
   	//원래는 소켓통신으로 할 예정이지만 현재는 알고리즘이 잘 돌아가는지 볼것이므로 scanf를 받아서 실행한다.
 
 
@@ -138,25 +140,25 @@ int main()
     for(int i = 0 ; i < MAX_BUILDING;i++){
     	//현재 등록된 건물의 수만큼 thread를 생성한다.
 
-    	tid_simul[i] = pthread_create(&simul_thr[i], NULL, simul_f, (void *)simul);
-    	//tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
+    	tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
+
     	printf("%d Thread Creat\n",i);
-    	if (tid_simul[i] != 0){
+    	if (tid_simul != 0){
        	perror("thread creation error: ");
        	exit(0);
    		}
-
+   		building_pid[i] = (int)simul_thr;
+   		printf("%dth simul_thr : %u\n",i,building_pid[i]);
 
     }
 
 	//DBconector(input->building_id);
 	
 	pthread_join(input_thr, NULL);
-	//pthread_join(simul_thr, NULL);
+
 	for(int i = 0 ; i < MAX_BUILDING;i++){
 
-		pthread_join(simul_thr[i], NULL);
-		//pthread_join(simul_thr, NULL);
+		pthread_join(simul_thr, NULL);
 	}
     
 
@@ -175,7 +177,7 @@ Elevator *LOOK(Elevator *elevators[6], Request *current){
 
  	for(int i = 0 ; i < NUM_ELEVATORS;i++){
 
- 		ideal[i] = find_ideal_location(elevators[i], current->start_floor, current->dest_floor, current->start_floor);
+ 		ideal[i] = Look_find_ideal_location(elevators[i], current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time(elevators[i]->pending, ideal[i], elevators[i]->current_floor, current->start_floor);
   		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
 
@@ -196,7 +198,19 @@ Elevator *C_SCAN(Elevator *elevators[6], Request *current){
 
 }
 
+Elevator *cluster(Elevator *elevators[6], Request *current){
+
+
+
+}
+
 void *simul_f(void *data){
+
+	printf("Thread Create\n");
+	pthread_t id;
+    // 현재 쓰레드의 id 를 얻어서 출력합니다
+	id = pthread_self();
+
 	int i;
     Simul *simul = (Simul *)data;
     Elevator *response; // 요청에 응답하는 엘리베이터
@@ -205,6 +219,8 @@ void *simul_f(void *data){
 
 
     while(1){
+
+    	
     	if (*simul->input->mode == CALL)
         {
             get_request(simul->input);
@@ -219,10 +235,10 @@ void *simul_f(void *data){
             // 요청에 응답하는 엘리베이터에 정보 추가하기
 
             // 사람 태울 층 추가하기
-            location = find_ideal_location(response, current.start_floor, current.dest_floor, current.start_floor);
+            location = Look_find_ideal_location(response, current.start_floor, current.dest_floor, current.start_floor);
             F_list_insert(response->pending, location, current.start_floor, current.num_people);
   			// 사람 내릴 층 추가하기
-            location = find_ideal_location(response, current.start_floor, current.dest_floor, current.dest_floor);
+            location = Look_find_ideal_location(response, current.start_floor, current.dest_floor, current.dest_floor);
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
         }
 
@@ -658,7 +674,7 @@ F_node *find_direction_change_location(F_node *current, int current_direction)
     }
 }
 
-F_node *find_ideal_location(Elevator *elevator, int start_floor, int dest_floor, int target)
+F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_floor, int target)
 {
     int elevator_direction = 0;
     int call_direction = 0;
