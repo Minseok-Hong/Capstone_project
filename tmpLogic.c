@@ -9,7 +9,8 @@
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
-//#include "/usr/include/mysql/mysql.h"
+#include "/usr/include/mysql/mysql.h"
+
 #define CALL 'A'
 
 #define BUFF_SIZE   1024
@@ -151,9 +152,11 @@ int main()
    		printf("%dth simul_thr : %u\n",i,building_pid[i]);
 
     }
-
+   
 	//DBconector(input->building_id);
+
 	
+
 	pthread_join(input_thr, NULL);
 
 	for(int i = 0 ; i < MAX_BUILDING;i++){
@@ -163,6 +166,63 @@ int main()
     
 
     return 0;
+}
+
+int DBconector(int id){
+	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW *)malloc(sizeof(MYSQL_ROW )*5);
+
+
+	printf("###################\n");
+	printf("###################\n");
+ 	printf("mysql_real_connect(conn,server,user,password,database,0,NULL,0) : %d\n",mysql_real_connect(conn,server,user,password,database,0,NULL,0));
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		printf("@@@@@@@@@@@@@@@@@@@@@@\n");
+ 		exit(1);
+  	}
+
+  	//printf("###################\n");
+   if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   }
+
+   res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL)
+  		printf("%s \n",row[0]);
+
+
+  	if(mysql_query(conn,"SELECT * FROM user"))
+  	{
+  	        return 1;
+  	}
+
+  	res = mysql_use_result(conn);
+
+   	printf("Returning List of Names : \n");
+   	while((row = mysql_fetch_row(res)) != NULL)
+		printf("%s \n",row[0]);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+   printf("MYSQL RETURN : %d\n",row[0]);
+   return row[0];
+
 }
 
 Elevator *LOOK(Elevator *elevators[6], Request *current){
@@ -217,10 +277,13 @@ void *simul_f(void *data){
     F_node *location;   // 요청이 들어가는 위치
     Request current;    // 처리할 요청
 
+    printf("DBconector\n");
+    DBconector(1);
+	 
 
     while(1){
 
-    	
+
     	if (*simul->input->mode == CALL)
         {
             get_request(simul->input);
@@ -262,53 +325,6 @@ void *input_f(void *data){
 		}
 	}
 }
-/*
-
-int DBconector(int id){
-	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
-
-	MYSQL *conn;
- 	MYSQL_RES *res;
- 	MYSQL_ROW row;
-
- 	char *server = "localhost";
- 	char *user = "root";
- 	char *password = "root";
- 	char *database = "capstone";
-
- 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
- 		exit(1);
-  	}
-   if(mysql_query(conn,"show tables")){
-
-   		exit(1);
-   }
-
-   res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
-  	while((row = mysql_fetch_row(res)) != NULL)
-  		printf("%s \n",row[0]);
-
-
-  	if(mysql_query(conn,"SELECT * FROM user"))
-  	{
-  	        return 1;
-  	}
-
-  	res = mysql_use_result(conn);
-
-   	printf("Returning List of Names : \n");
-   	while((row = mysql_fetch_row(res)) != NULL)
-		printf("%s \n",row[0]);
-
-   mysql_free_result(res);
-   mysql_close(conn);
-
-   printf("MYSQL RETURN : %d\n",row[0]);
-   return row[0];
-
-}
-*/
 
 void move_elevator(Elevator *elevators[6])
 {
