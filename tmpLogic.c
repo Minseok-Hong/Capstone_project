@@ -196,18 +196,18 @@ int DBconector(int id){
   	}
 
   	printf("###################\n");
-   if(mysql_query(conn,"show tables")){
+  	 if(mysql_query(conn,"show tables")){
 
    		exit(1);
-   }
+   	}
 
-   res = mysql_use_result(conn);
+	   res = mysql_use_result(conn);
   	printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL)
   		printf("%s \n",row[0]);
 
 
-  	if(mysql_query(conn,"SELECT * FROM user"))
+  	if(mysql_query(conn,"SELECT * FROM USER"))
   	{
   	        return 1;
   	}
@@ -216,11 +216,11 @@ int DBconector(int id){
 
    	printf("Returning List of Names : \n");
    	while((row = mysql_fetch_row(res)) != NULL)
-		printf("%s \n",row[0]);
+		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
 
    mysql_free_result(res);
    mysql_close(conn);
-
+  // printf();
    printf("MYSQL RETURN : %d\n",row[0]);
    return row[0];
 
