@@ -185,16 +185,17 @@ int DBconector(int id){
  	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
  	row = (MYSQL_ROW *)malloc(sizeof(MYSQL_ROW )*5);
 
+	conn = mysql_init(NULL);
 
 	printf("###################\n");
 	printf("###################\n");
- 	printf("mysql_real_connect(conn,server,user,password,database,0,NULL,0) : %d\n",mysql_real_connect(conn,server,user,password,database,0,NULL,0));
+ 	//printf("mysql_real_connect(conn,server,user,password,database,0,NULL,0) : %d\n",mysql_real_connect(conn,server,user,password,database,0,NULL,0));
  	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
  		printf("@@@@@@@@@@@@@@@@@@@@@@\n");
  		exit(1);
   	}
 
-  	//printf("###################\n");
+  	printf("###################\n");
    if(mysql_query(conn,"show tables")){
 
    		exit(1);
