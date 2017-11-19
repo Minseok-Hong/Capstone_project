@@ -18,7 +18,7 @@
 
         mysqli_query($conn,$mysql_qry);
 
-	echo "insert Successful";
+	echo "success";
 //      if($conn->mysqli_query($mysql_qry) === TRUE)
 //      {
 //              echo "insert Successful";
