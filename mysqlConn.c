@@ -8,7 +8,7 @@ int main()
         MYSQL_RES *res;
         MYSQL_ROW row;
 
-        char *server = "localhost";
+        char *server = "52.79.39.200";
         char *user = "root";
         char *password = "root";
         char *database = "capstone";
@@ -31,7 +31,7 @@ int main()
                 printf("%s \n",row[0]);
 
 
-        if(mysql_query(conn,"SELECT * FROM user"))
+        if(mysql_query(conn,"SELECT * FROM USER"))
         {
                 return 1;
         }

@@ -91,7 +91,8 @@ Elevator *C_SCAN(Elevator *elevators[6], Request *current);
 Elevator *cluster(Elevator *elevators[6], Request *current);
 void *simul_f(void *data);
 void *input_f(void *data);
-int DBconector(int id);
+int DBconector_floor(int id);
+int DBconector_ele_num(int id);
 void move_elevator(Elevator *elevators[6]);
 void socket_server();
 void init(Input **input, Simul **simul, Elevator *elevators[6]);
@@ -153,10 +154,6 @@ int main()
 
     }
    
-	//DBconector(input->building_id);
-
-	
-
 	pthread_join(input_thr, NULL);
 
 	for(int i = 0 ; i < MAX_BUILDING;i++){
@@ -168,7 +165,7 @@ int main()
     return 0;
 }
 
-int DBconector(int id){
+int DBconector_floor(int id){
 	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
 
 	MYSQL *conn;
@@ -180,34 +177,30 @@ int DBconector(int id){
  	char *password = "root";
  	char *database = "capstone";
 
+ 	int tmp;
 
  	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
  	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
- 	row = (MYSQL_ROW *)malloc(sizeof(MYSQL_ROW )*5);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
 
 	conn = mysql_init(NULL);
 
-	printf("###################\n");
-	printf("###################\n");
- 	//printf("mysql_real_connect(conn,server,user,password,database,0,NULL,0) : %d\n",mysql_real_connect(conn,server,user,password,database,0,NULL,0));
  	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
- 		printf("@@@@@@@@@@@@@@@@@@@@@@\n");
  		exit(1);
   	}
 
-  	printf("###################\n");
   	 if(mysql_query(conn,"show tables")){
 
    		exit(1);
    	}
 
-	   res = mysql_use_result(conn);
+	res = mysql_use_result(conn);
   	printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL)
   		printf("%s \n",row[0]);
 
 
-  	if(mysql_query(conn,"SELECT * FROM USER"))
+  	if(mysql_query(conn,"SELECT * FROM building"))
   	{
   	        return 1;
   	}
@@ -215,15 +208,71 @@ int DBconector(int id){
   	res = mysql_use_result(conn);
 
    	printf("Returning List of Names : \n");
-   	while((row = mysql_fetch_row(res)) != NULL)
+   	while((row = mysql_fetch_row(res)) != NULL){
 		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
+		tmp = atoi(row[2]);
+	}
 
+	
    mysql_free_result(res);
    mysql_close(conn);
-  // printf();
-   printf("MYSQL RETURN : %d\n",row[0]);
-   return row[0];
 
+   return tmp;
+}
+
+int DBconector_ele_num(int id){
+	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL)
+  		printf("%s \n",row[0]);
+
+
+  	if(mysql_query(conn,"SELECT * FROM building"))
+  	{
+  	        return 1;
+  	}
+
+  	res = mysql_use_result(conn);
+
+   	printf("Returning List of Names : \n");
+   	while((row = mysql_fetch_row(res)) != NULL){
+		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
+		tmp = atoi(row[3]);
+	}
+
+	
+   mysql_free_result(res);
+   mysql_close(conn);
+
+   return tmp;
 }
 
 Elevator *LOOK(Elevator *elevators[6], Request *current){
@@ -271,6 +320,8 @@ void *simul_f(void *data){
 	pthread_t id;
     // 현재 쓰레드의 id 를 얻어서 출력합니다
 	id = pthread_self();
+	int max_floor;
+	int ele_num;
 
 	int i;
     Simul *simul = (Simul *)data;
@@ -278,9 +329,12 @@ void *simul_f(void *data){
     F_node *location;   // 요청이 들어가는 위치
     Request current;    // 처리할 요청
 
-    printf("DBconector\n");
-    DBconector(1);
-	 
+    //printf("DBconector_floor\n");
+    max_floor = DBconector_floor(1);
+    printf("max_floor : %d\n",max_floor);
+
+    ele_num = DBconector_ele_num(1);
+	printf("ele_num : %d\n",ele_num);
 
     while(1){
 
