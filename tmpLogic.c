@@ -86,16 +86,18 @@ typedef struct _SIMUL
 
 int building_pid[MAX_BUILDING];
 ///////////////////////////////////////////////////////////////////////
-Elevator *LOOK(Elevator *elevators[6], Request *current);
+Elevator *LOOK(Elevator **elevators, int num, Request *current);
 Elevator *C_SCAN(Elevator *elevators[6], Request *current);
 Elevator *cluster(Elevator *elevators[6], Request *current);
 void *simul_f(void *data);
 void *input_f(void *data);
 int DBconector_floor(int id);
 int DBconector_ele_num(int id);
-void move_elevator(Elevator *elevators[6]);
+void move_elevator(Elevator **elevators, int num);
 void socket_server();
-void init(Input **input, Simul **simul, Elevator *elevators[6]);
+void init_input(Input **input, Simul **simul);
+void init_elevator(Elevator **elevators, int num);
+
 void get_request(Input *input);
 void insert_into_queue(int current_floor, int dest_floor, int num_people);
 void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people);
@@ -120,7 +122,6 @@ int main()
 {
 	Input *input;
 	Simul *simul;
-	Elevator *elevators[6];
 
 	pthread_t input_thr;
   	pthread_t socket_thr;
@@ -131,7 +132,7 @@ int main()
   	//원래는 소켓통신으로 할 예정이지만 현재는 알고리즘이 잘 돌아가는지 볼것이므로 scanf를 받아서 실행한다.
 
 
-	init(&input, &simul,elevators);
+	init_input(&input, &simul);
     
     tid_input = pthread_create(&input_thr, NULL, input_f, (void *)input);
     if (tid_input != 0){
@@ -139,7 +140,7 @@ int main()
         exit(0);
     }
 
-    for(int i = 0 ; i < MAX_BUILDING;i++){
+    for(int i =  1; i <= MAX_BUILDING;i++){
     	//현재 등록된 건물의 수만큼 thread를 생성한다.
 
     	tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
@@ -163,6 +164,60 @@ int main()
     
 
     return 0;
+}
+
+void init_input(Input **input, Simul **simul)
+{
+    int i, j;
+    reqs.head = (R_node *)malloc(sizeof(R_node));
+    reqs.tail = (R_node *)malloc(sizeof(R_node));
+    reqs.head->prev = NULL;
+    reqs.head->next = reqs.tail;
+    reqs.tail->prev = reqs.head;
+    reqs.tail->next = NULL;
+
+    *input = (Input *)malloc(sizeof(Input));
+    (*input)->mode = (char *)malloc(sizeof(char));
+    (*input)->req_elevator_id = (int *)malloc(sizeof(int));
+    (*input)->req_current_floor = (int *)malloc(sizeof(int));
+    (*input)->req_dest_floor = (int *)malloc(sizeof(int));
+    (*input)->req_num_people = (int *)malloc(sizeof(int));
+
+    *simul = (Simul *)malloc(sizeof(Simul));
+    (*simul)->input = *input;
+	
+}
+
+
+void init_elevator(Elevator **elevators, int num){
+
+
+    for (int i = 0; i <= num; i++)
+    {
+         *(elevators + sizeof(Elevator)*i ) = (Elevator *)malloc(sizeof(Elevator));
+    }
+
+    //엘리베이터 : 1, 2 - 저층, 3, 4 - 전층, 5, 6 - 고층
+    for (int i = 0; i <= num; i++)
+    {
+        (*(elevators + sizeof(Elevator)*i ))->pending.head = (F_node *)malloc(sizeof(F_node));
+        (*(elevators + sizeof(Elevator)*i ))->pending.tail = (F_node *)malloc(sizeof(F_node));
+        (*(elevators + sizeof(Elevator)*i ))->pending.head->floor = 0;
+        (*(elevators + sizeof(Elevator)*i ))->pending.tail->floor = 0;
+        (*(elevators + sizeof(Elevator)*i ))->pending.head->prev = NULL;
+        (*(elevators + sizeof(Elevator)*i ))->pending.head->next = (*(elevators + sizeof(Elevator)*i ))->pending.tail;
+        (*(elevators + sizeof(Elevator)*i ))->pending.tail->prev = (*(elevators + sizeof(Elevator)*i ))->pending.head;
+        (*(elevators + sizeof(Elevator)*i ))->pending.tail->next = NULL;
+
+        (*(elevators + sizeof(Elevator)*i ))->current_floor = 1;
+        (*(elevators + sizeof(Elevator)*i ))->next_dest = 1;
+        (*(elevators + sizeof(Elevator)*i ))->current_people = 0;
+        (*(elevators + sizeof(Elevator)*i ))->total_people = 0;
+        (*(elevators + sizeof(Elevator)*i ))->fix = 0;
+        (*(elevators + sizeof(Elevator)*i ))->fix_time = 0;
+    }
+    printf("init_END\n\n");
+
 }
 
 int DBconector_floor(int id){
@@ -275,7 +330,7 @@ int DBconector_ele_num(int id){
    return tmp;
 }
 
-Elevator *LOOK(Elevator *elevators[6], Request *current){
+Elevator *LOOK(Elevator **elevators, int num, Request *current){
 
 	F_node **ideal;
 	int *time_required;
@@ -285,13 +340,19 @@ Elevator *LOOK(Elevator *elevators[6], Request *current){
 	ideal = (F_node **)malloc(sizeof(F_node *) * size);
  	time_required = (int *)malloc(sizeof(int) * size);
 
- 	for(int i = 0 ; i < NUM_ELEVATORS;i++){
 
+
+ 	for(int i = 0 ; i <= num;i++){
+
+ 		/*
+			여기서 부터 버그 제거
+ 		*/
  		ideal[i] = Look_find_ideal_location(elevators[i], current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time(elevators[i]->pending, ideal[i], elevators[i]->current_floor, current->start_floor);
   		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
 
  	}
+
  	ideal_index = find_min(time_required, size);
   	free(time_required);
   	free(ideal);
@@ -323,35 +384,43 @@ void *simul_f(void *data){
 	int max_floor;
 	int ele_num;
 
+	Elevator *elevators;
+
 	int i;
     Simul *simul = (Simul *)data;
     Elevator *response; // 요청에 응답하는 엘리베이터
     F_node *location;   // 요청이 들어가는 위치
     Request current;    // 처리할 요청
 
-    //printf("DBconector_floor\n");
     max_floor = DBconector_floor(1);
     printf("max_floor : %d\n",max_floor);
 
-    ele_num = DBconector_ele_num(1);
+    //ele_num = DBconector_ele_num(1);
+    ele_num = 6;
 	printf("ele_num : %d\n",ele_num);
 
-    while(1){
+	init_elevator(&elevators,ele_num);
+	 (*simul).elevators = &elevators;
+	printf("@@@@@@@@@@@@@@@@@@@@@@@@\n");
 
+    while(1){
 
     	if (*simul->input->mode == CALL)
         {
             get_request(simul->input);
         }
-
+        
         insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
+        
+        printf("@@@@@@@@@@@@@@@@@@@@@@@@\n");
         if (R_list_size(reqs) != 0)
         {
-        	
+        		printf("$$$$$$$$$$$$$$$$$\n");
             current = *R_list_remove(reqs);
-            response = LOOK(simul->elevators, &current);
+            printf("$$$$$$$$$$$$$$$$$\n");
+            response = LOOK((simul->elevators),ele_num, &current);
             // 요청에 응답하는 엘리베이터에 정보 추가하기
-
+            printf("$$$$$$$$$$$$$$$$$\n");
             // 사람 태울 층 추가하기
             location = Look_find_ideal_location(response, current.start_floor, current.dest_floor, current.start_floor);
             F_list_insert(response->pending, location, current.start_floor, current.num_people);
@@ -359,9 +428,10 @@ void *simul_f(void *data){
             location = Look_find_ideal_location(response, current.start_floor, current.dest_floor, current.dest_floor);
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
         }
-
+        printf("@@@@@@@@@@@@@@@@@@@@@@@@\n");
         // 엘리베이터 이동시키기
-        move_elevator(simul->elevators);
+        move_elevator(simul->elevators, ele_num);
+        printf("############################\n");
         sleep(1);
 
 
@@ -381,7 +451,7 @@ void *input_f(void *data){
 	}
 }
 
-void move_elevator(Elevator *elevators[6])
+void move_elevator(Elevator **elevators, int num)
 {
     int i;
     int to_ride = 0; // 태워야 할 사람 수
@@ -390,52 +460,49 @@ void move_elevator(Elevator *elevators[6])
     F_node *next_floor;
     F_node *pair;
 
-    
-    for (i = 0; i < NUM_ELEVATORS; i++)
+    for (i = 0; i <= num; i++)
     {
-
-        if (F_list_size(elevators[i]->pending) > 0)
+        if (F_list_size((*(elevators + sizeof(Elevator)*i ))->pending) > 0)
         {
 
-            next_floor = F_list_peek(elevators[i]->pending);
+            next_floor = F_list_peek((*(elevators + sizeof(Elevator)*i ))->pending);
             if (next_floor->floor == -1)
             {
-                elevators[i]->fix = 1;
-                F_list_remove(elevators[i]->pending);
+
             }
             else
             {
-                if (elevators[i]->next_dest != next_floor->floor)
+                if (  (*(elevators + sizeof(Elevator)*i ))->next_dest != next_floor->floor)
                 {
-                    elevators[i]->next_dest = next_floor->floor;
+                     (*(elevators + sizeof(Elevator)*i ))->next_dest = next_floor->floor;
                 }
 
-                if (elevators[i]->next_dest > elevators[i]->current_floor)
+                if ((*(elevators + sizeof(Elevator)*i ))->next_dest > (*(elevators + sizeof(Elevator)*i ))->current_floor)
                 {
-                    (elevators[i]->current_floor)++;
+                    ((*(elevators + sizeof(Elevator)*i ))->current_floor)++;
                 }
-                else if (elevators[i]->next_dest < elevators[i]->current_floor)
+                else if ((*(elevators + sizeof(Elevator)*i ))->next_dest < (*(elevators + sizeof(Elevator)*i ))->current_floor)
                 {
-                    (elevators[i]->current_floor)--;
+                    ((*(elevators + sizeof(Elevator)*i ))->current_floor)--;
                 }
                 else
                 {
-                    if (elevators[i]->current_floor == next_floor->floor)
+                    if ((*(elevators + sizeof(Elevator)*i ))->current_floor == next_floor->floor)
                     {
-                        available = MAX_PEOPLE - elevators[i]->current_people;
+                        available = MAX_PEOPLE - (*(elevators + sizeof(Elevator)*i ))->current_people;
                         if (next_floor->people <= available)
                         {
-                            elevators[i]->current_people += next_floor->people;
+                            (*(elevators + sizeof(Elevator)*i ))->current_people += next_floor->people;
                             if (next_floor->people > 0)
                             {
-                                elevators[i]->total_people += next_floor->people;
+                                (*(elevators + sizeof(Elevator)*i ))->total_people += next_floor->people;
                             }
-                            F_list_remove(elevators[i]->pending);
+                            F_list_remove((*(elevators + sizeof(Elevator)*i ))->pending);
                         }
                         else
                         {
-                            elevators[i]->current_people += available;
-                            elevators[i]->total_people += available;
+                            (*(elevators + sizeof(Elevator)*i ))->current_people += available;
+                            (*(elevators + sizeof(Elevator)*i ))->total_people += available;
                             leftover = next_floor->people - available;
                             pair = next_floor->next;
                             while (1)
@@ -446,12 +513,12 @@ void move_elevator(Elevator *elevators[6])
                                 }
                                 pair = pair->next;
                             }
-                            F_list_remove(elevators[i]->pending);
+                            F_list_remove((*(elevators + sizeof(Elevator)*i ))->pending);
 
                             pair->people = available * -1;
 
                             flag = 1;
-                            insert_into_queue(elevators[i]->current_floor, pair->floor, leftover);
+                            insert_into_queue((*(elevators + sizeof(Elevator)*i ))->current_floor, pair->floor, leftover);
                         }
                     }
                 }
@@ -498,64 +565,6 @@ void socket_server(){
 	close( client_socket);
 
 
-}
-
-
-
-void init(Input **input, Simul **simul, Elevator *elevators[6])
-{
-    int i, j;
-    reqs.head = (R_node *)malloc(sizeof(R_node));
-    reqs.tail = (R_node *)malloc(sizeof(R_node));
-    reqs.head->prev = NULL;
-    reqs.head->next = reqs.tail;
-    reqs.tail->prev = reqs.head;
-    reqs.tail->next = NULL;
-
-    *input = (Input *)malloc(sizeof(Input));
-    (*input)->mode = (char *)malloc(sizeof(char));
-    (*input)->req_elevator_id = (int *)malloc(sizeof(int));
-    (*input)->req_current_floor = (int *)malloc(sizeof(int));
-    (*input)->req_dest_floor = (int *)malloc(sizeof(int));
-    (*input)->req_num_people = (int *)malloc(sizeof(int));
-
-    *simul = (Simul *)malloc(sizeof(Simul));
-    (*simul)->input = *input;
-
-    for (i = 0; i < NUM_ELEVATORS; i++)
-    {
-        elevators[i] = (Elevator *)malloc(sizeof(Elevator));
-    }
-
-    //엘리베이터 : 1, 2 - 저층, 3, 4 - 전층, 5, 6 - 고층
-    for (i = 0; i < NUM_ELEVATORS; i++)
-    {
-        elevators[i]->pending.head = (F_node *)malloc(sizeof(F_node));
-        elevators[i]->pending.tail = (F_node *)malloc(sizeof(F_node));
-        elevators[i]->pending.head->floor = 0;
-        elevators[i]->pending.tail->floor = 0;
-        elevators[i]->pending.head->prev = NULL;
-        elevators[i]->pending.head->next = elevators[i]->pending.tail;
-        elevators[i]->pending.tail->prev = elevators[i]->pending.head;
-        elevators[i]->pending.tail->next = NULL;
-
-        elevators[i]->current_floor = 1;
-        elevators[i]->next_dest = 1;
-        elevators[i]->current_people = 0;
-        elevators[i]->total_people = 0;
-        elevators[i]->fix = 0;
-        elevators[i]->fix_time = 0;
-    }
-
-    // 고층 엘리베이터는 처음 11층에 멈춰있음
-    /*
-    elevators[4]->current_floor = 11;
-    elevators[4]->next_dest = 11;
-    elevators[5]->current_floor = 11;
-    elevators[5]->next_dest = 11;
-	*/
-    (*simul)->elevators = elevators;
-	
 }
 
 int find_time(F_list list, F_node *target, int start, int end)
