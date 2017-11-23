@@ -112,7 +112,7 @@ int find_min(int *arr, int n);
 Request *R_list_remove(R_list list);
 int R_list_size(R_list list);
 F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target);
-F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_floor, int target);
+F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
 //////////////////////////////////////////////////////////////////////
 
 R_list reqs;
@@ -140,7 +140,7 @@ int main()
         exit(0);
     }
 
-    for(int i =  1; i <= MAX_BUILDING;i++){
+    for(int i =  1; i <= MAX_BUILDING; i++){
     	//현재 등록된 건물의 수만큼 thread를 생성한다.
 
     	tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
@@ -165,6 +165,70 @@ int main()
 
     return 0;
 }
+
+void *simul_f(void *data){
+
+	printf("Thread Create\n");
+	pthread_t id;
+    // 현재 쓰레드의 id 를 얻어서 출력합니다
+	id = pthread_self();
+	int max_floor;
+	int ele_num;
+
+	Elevator *elevators;
+
+	int i;
+    Simul *simul = (Simul *)data;
+    Elevator *response; // 요청에 응답하는 엘리베이터
+    F_node *location;   // 요청이 들어가는 위치
+    Request current;    // 처리할 요청
+
+    max_floor = DBconector_floor(1);
+    printf("max_floor : %d\n",max_floor);
+
+    //ele_num = DBconector_ele_num(1);
+    ele_num = 6;
+	printf("ele_num : %d\n",ele_num);
+
+	init_elevator(&elevators,ele_num);
+	 (*simul).elevators = &elevators;
+
+    while(1){
+
+    	if (*simul->input->mode == CALL)
+        {
+            get_request(simul->input);
+        }
+        
+        //printf("simul->input : %d\n",*(simul->input->req_elevator_id));
+        //printf("building_pid[*(simul->input->req_elevator_id)] != id)\n");
+        //printf(" %d              %d  \n",building_pid[*(simul->input->req_elevator_id)], (int)id);
+        if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
+        	continue;
+        }
+        printf("%dth elevator called\n",*(simul->input->req_elevator_id));
+        insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
+        
+        if (R_list_size(reqs) != 0)
+        {
+            current = *R_list_remove(reqs);
+            response = LOOK((simul->elevators),ele_num, &current);
+            // 요청에 응답하는 엘리베이터에 정보 추가하기
+            // 사람 태울 층 추가하기
+            location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.start_floor);
+            F_list_insert(response->pending, location, current.start_floor, current.num_people);
+  			// 사람 내릴 층 추가하기
+            location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor);
+            F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
+        }
+        // 엘리베이터 이동시키기
+        move_elevator(simul->elevators, ele_num);
+        sleep(1);
+
+
+    }
+}
+
 
 void init_input(Input **input, Simul **simul)
 {
@@ -191,7 +255,7 @@ void init_input(Input **input, Simul **simul)
 
 void init_elevator(Elevator **elevators, int num){
 
-
+	printf("init_Start\n");
     for (int i = 0; i <= num; i++)
     {
          *(elevators + sizeof(Elevator)*i ) = (Elevator *)malloc(sizeof(Elevator));
@@ -337,18 +401,19 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current){
 	int ideal_index;
 	int size =6;
 
+	printf("Look start\n");
 	ideal = (F_node **)malloc(sizeof(F_node *) * size);
  	time_required = (int *)malloc(sizeof(int) * size);
 
 
-
- 	for(int i = 0 ; i <= num;i++){
+ 	printf("Look start\n");
+ 	for(int i = 0 ; i < num;i++){
 
  		/*
 			여기서 부터 버그 제거
  		*/
- 		ideal[i] = Look_find_ideal_location(elevators[i], current->start_floor, current->dest_floor, current->start_floor);
-  		time_required[i] = find_time(elevators[i]->pending, ideal[i], elevators[i]->current_floor, current->start_floor);
+ 		ideal[i] = Look_find_ideal_location( (elevators + sizeof(Elevator)*i ), current->start_floor, current->dest_floor, current->start_floor);
+  		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
   		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
 
  	}
@@ -375,68 +440,7 @@ Elevator *cluster(Elevator *elevators[6], Request *current){
 
 }
 
-void *simul_f(void *data){
 
-	printf("Thread Create\n");
-	pthread_t id;
-    // 현재 쓰레드의 id 를 얻어서 출력합니다
-	id = pthread_self();
-	int max_floor;
-	int ele_num;
-
-	Elevator *elevators;
-
-	int i;
-    Simul *simul = (Simul *)data;
-    Elevator *response; // 요청에 응답하는 엘리베이터
-    F_node *location;   // 요청이 들어가는 위치
-    Request current;    // 처리할 요청
-
-    max_floor = DBconector_floor(1);
-    printf("max_floor : %d\n",max_floor);
-
-    //ele_num = DBconector_ele_num(1);
-    ele_num = 6;
-	printf("ele_num : %d\n",ele_num);
-
-	init_elevator(&elevators,ele_num);
-	 (*simul).elevators = &elevators;
-	printf("@@@@@@@@@@@@@@@@@@@@@@@@\n");
-
-    while(1){
-
-    	if (*simul->input->mode == CALL)
-        {
-            get_request(simul->input);
-        }
-        
-        insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
-        
-        printf("@@@@@@@@@@@@@@@@@@@@@@@@\n");
-        if (R_list_size(reqs) != 0)
-        {
-        		printf("$$$$$$$$$$$$$$$$$\n");
-            current = *R_list_remove(reqs);
-            printf("$$$$$$$$$$$$$$$$$\n");
-            response = LOOK((simul->elevators),ele_num, &current);
-            // 요청에 응답하는 엘리베이터에 정보 추가하기
-            printf("$$$$$$$$$$$$$$$$$\n");
-            // 사람 태울 층 추가하기
-            location = Look_find_ideal_location(response, current.start_floor, current.dest_floor, current.start_floor);
-            F_list_insert(response->pending, location, current.start_floor, current.num_people);
-  			// 사람 내릴 층 추가하기
-            location = Look_find_ideal_location(response, current.start_floor, current.dest_floor, current.dest_floor);
-            F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
-        }
-        printf("@@@@@@@@@@@@@@@@@@@@@@@@\n");
-        // 엘리베이터 이동시키기
-        move_elevator(simul->elevators, ele_num);
-        printf("############################\n");
-        sleep(1);
-
-
-    }
-}
 
 void *input_f(void *data){
 
@@ -754,11 +758,11 @@ F_node *find_direction_change_location(F_node *current, int current_direction)
     }
 }
 
-F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_floor, int target)
+F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
 {
     int elevator_direction = 0;
     int call_direction = 0;
-    F_list list = elevator->pending;
+    F_list list = (*elevator)->pending;
     F_node *start = list.head->next;
     F_node *end;
 
@@ -767,7 +771,7 @@ F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_f
         return start;
     }//현재 이동할 노드가 없다면
 
-    elevator_direction = start->floor - elevator->current_floor;
+    elevator_direction = start->floor - (*elevator)->current_floor;
     if(elevator_direction == 0)// 만약 제자리에 가만히 있는 엘리베이터라면
     {
         if(F_list_size(list) == 1)
@@ -786,7 +790,7 @@ F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_f
     {
         if (elevator_direction > 0)// 현재 올라가고 있는 엘리베이터라면
         {
-            if (target >= elevator->current_floor)//만약 올라가는 방향인데 내 경로에 요청이 같다면
+            if (target >= (*elevator)->current_floor)//만약 올라가는 방향인데 내 경로에 요청이 같다면
             {
                 end = find_direction_change_location(start, elevator_direction);
                 return find_scheduled_place(start, end, start_floor, dest_floor, target);
@@ -815,7 +819,7 @@ F_node *Look_find_ideal_location(Elevator *elevator, int start_floor, int dest_f
     {
         if (elevator_direction < 0)
         {
-            if (target <= elevator->current_floor)
+            if (target <= (*elevator)->current_floor)
             {
                 end = find_direction_change_location(start, elevator_direction);
                 return find_scheduled_place(start, end, start_floor, dest_floor, target);
