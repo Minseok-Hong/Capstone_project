@@ -8,7 +8,7 @@
 <?php
 	$inputValue = $_POST['inputValue'];
 	
-	 $host = 'localhost';
+	$host = 'localhost';
         $user = 'root';
         $pw = 'root';
         $dbName = 'capstone';
@@ -16,7 +16,7 @@
         mysql_connect($host, $user, $pw);
         mysql_select_db($dbName);
 
-	 $sql = "SELECT Building_Name, Building_Floor, Elevator_Number FROM building where Building_Id = ($inputValue)";
+	$sql = "SELECT Building_Name, Building_Floor, Elevator_Number FROM building where Building_Id = ($inputValue)";
         $result = mysql_query($sql);
 
 
@@ -39,6 +39,26 @@
         </tr>
         </table><br>";
 }
+
+
+	for($count =1; $count <= $ele_Number; $count++){
+                echo '<link rel="stylesheet" type="text/css" href="style.css">';
+  echo '<script src="jquery-2.0.2.min.js"></script>';
+  echo '<script src="script.js"></script>';
+  echo '
+  <div class="tower">
+   ';
+  
+  for($floor=1; $floor <= $ele_Floor; $floor++)
+  {
+     echo '<div class="floor">'; 
+     echo $ele_Floor-$floor+1;
+     echo '</div> ';
+  }
+
+  echo ' <img id="f0" class="elevator" src="elevator.png"> ';
+  echo '</div> ';
+  }
 
 
 ?>

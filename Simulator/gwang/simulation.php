@@ -3,7 +3,7 @@
 <head>
    <meta charset="UTF-8">
    <title>모두의 엘리베이터</title>
-   <style>
+<!--   <style>
       #container {
          width:960px;
          margin:0 auto;
@@ -22,6 +22,7 @@
       	padding: 10px;
       }
    </style>
+-->
    <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
 </head>
 <body>
@@ -77,19 +78,6 @@
             });
         });
 </script>
-<?php
-	
-function processDrpdown($selectedVal) {
-    //echo "Selected value in php<BR> ".$selectedVal;
-	echo "1";
-}
-if ($_POST['dropdownValue']){
-    //call the function or execute the code
-    processDrpdown($_POST['dropdownValue']);
-	echo "@@@@@@@@@@@@";
-        //echo "Selected value in php<BR> ".$selectedVal;
-}
-?>
 
 </body>
 </html>
