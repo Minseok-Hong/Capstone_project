@@ -1,0 +1,48 @@
+<html>
+<head>
+<title>TTTTTT</title>
+</head>
+
+<body>
+
+<?php
+	$inputValue = $_POST['inputValue'];
+	
+	 $host = 'localhost';
+        $user = 'root';
+        $pw = 'root';
+        $dbName = 'capstone';
+
+        mysql_connect($host, $user, $pw);
+        mysql_select_db($dbName);
+
+	 $sql = "SELECT Building_Name, Building_Floor, Elevator_Number FROM building where Building_Id = ($inputValue)";
+        $result = mysql_query($sql);
+
+
+        while($row = MySQL_fetch_array($result)){
+
+        $ele_Name = $row[ Building_Name];
+        $ele_Floor = $row[ Building_Floor];
+        $ele_Number = $row[ Elevator_Number];
+
+
+
+        echo"
+
+        <table border=1 width=600 cellspacing=0 cellpadding =2 align=center>
+        <tr align = center>
+                <td width = 50>빌딩이름</td><td width=50>$ele_Name</td>
+                <td width = 50>빌딩층수</td><td width=50>$ele_Floor</td>
+                <td width = 50>엘리베이터수</td><td width=50>$ele_Number</td>
+
+        </tr>
+        </table><br>";
+}
+
+
+?>
+
+
+</body>
+</html>
