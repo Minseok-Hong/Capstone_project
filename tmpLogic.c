@@ -14,9 +14,7 @@
 #define CALL 'A'
 
 #define BUFF_SIZE   1024
-#define MAX_BUILDING 2 //서버에서 가동할 수 있는 최대 빌딩의 수
-#define FLOOR 20
-#define NUM_ELEVATORS 6
+#define MAX_BUILDING 4 //서버에서 가동할 수 있는 최대 빌딩의 수
 #define MAX_PEOPLE 15 // 엘리베이터 정원
 #define MAX_TOTAL 150 // 점검 받아야하는 수
 
@@ -83,50 +81,69 @@ typedef struct _SIMUL
     Input *input;
 } Simul; // 시뮬레이션 구조체
 
+typedef struct _DATABASE
+{
+	int *USER_ID;
+	int *start_floor;
+	int *dest_floor;
+	char **time;
+	int *Building_Id;
+	int *Elevator_id;
+	int flag;
+
+} Database;
+
 
 int building_pid[MAX_BUILDING];
 ///////////////////////////////////////////////////////////////////////
-Elevator *LOOK(Elevator **elevators, int num, Request *current);
+Elevator *LOOK(Elevator **elevators, int num, Request *current, char **userID);
 Elevator *C_SCAN(Elevator **elevators, int num, Request *current);
-Elevator *cluster(Elevator *elevators[6], Request *current);
+Elevator *cluster(Elevator **elevators, int num, Request *current);
 
 F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
 F_node *C_SCAN_up_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
+F_node *cluster_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
+
 
 F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target);
-
+F_node *find_direction_change_location(F_node *current, int current_direction);
 
 void *simul_f(void *data);
 void *input_f(void *data);
+void *db_f(void *data);
 
+
+void DB_Calling_updater(char *userID, int Time, int elevator_id);
+void DB_Elevator_updater(int building_id);
+void DB_Flag_updater(char *userID);
 int DBconector_floor(int id);
 int DBconector_ele_num(int id);
-void move_elevator(Elevator **elevators, int num);
-void socket_server();
+void move_elevator(Elevator **elevators, int num, int max_floor);
+//void socket_server();
 
 void init_input(Input **input);
 void init_simul(Input **input, Simul **simul);
 void init_elevator(Elevator **elevators, int num);
 
-void print_elevator_info(Elevator **elevators, int num);
+void get_request(Input *input, int elevator_id, int current_floor, int dest_floor, int people_num);
+void insert_into_queue(int current_floor, int dest_floor, int num_people, int max_floor);
 
-void get_request(Input *input);
-void insert_into_queue(int current_floor, int dest_floor, int num_people);
-void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people);
 void F_list_insert(F_list list, F_node *after, int floor, int people);
 int F_list_size(F_list list);
 void F_list_remove(F_list list);
 F_node *F_list_peek(F_list list);
-void print_F_list(F_list list);
-F_node *find_direction_change_location(F_node *current, int current_direction);
+
+Request *R_list_remove(R_list list);
+int R_list_size(R_list list);
+void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people);
 
 int find_time(F_list list, F_node *target, int start, int end);
 int find_min(int *arr, int n);
-Request *R_list_remove(R_list list);
-int R_list_size(R_list list);
+int find_min_time(int numA, int numB);
 
-
-void print_UI(Elevator **elevators, int num);
+void print_F_list(F_list list);
+void print_elevator_info(Elevator **elevators, int num);
+void print_UI(Elevator **elevators, int num, int floor_num);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -135,128 +152,214 @@ int flag = 0;
 ///////////////////////////////////////////////////////////////////////
 int main()
 {
-	Input *input;
+ 
+ 	Input *input;
 
-	pthread_t input_thr;
-  	pthread_t socket_thr;
-  	pthread_t simul_thr;
-  	
-  	int tid_input;
-  	int tid_simul;
-  	//원래는 소켓통신으로 할 예정이지만 현재는 알고리즘이 잘 돌아가는지 볼것이므로 scanf를 받아서 실행한다.
+ 	pthread_t input_thr; 
+ 	pthread_t simul_thr;
+ 	pthread_t db_thr;
+	
+ 	//pthread_t socket_thr;
+	int tid_db;
+	int tid_input;
+	int tid_simul;
+	//원래는 소켓통신으로 할 예정이지만 현재는 알고리즘이 잘 돌아가는지 볼것이므로 scanf를 받아서 실행한다.
 
-
+	system("clear");
 	init_input(&input);
-    
-    //tid_input = pthread_create(&input_thr, NULL, input_f, (void *)input);
-    tid_input = pthread_create(&input_thr, NULL, input_f, (void *)input);
-    if (tid_input != 0){
-        perror("thread creation error: ");
-        exit(0);
-    }
 
-    for(int i =  1; i <= 1; i++){
-    	//현재 등록된 건물의 수만큼 thread를 생성한다.
+	tid_input = pthread_create(&input_thr, NULL, input_f, (void *)input);
+	if (tid_input != 0){
+	    perror("thread creation error: ");
+	    exit(0);
+	}
+
+	for(int i =  1; i <= MAX_BUILDING; i++){
+  	//현재 등록된 건물의 수만큼 thread를 생성한다.
 		Simul *simul;
 
 		init_simul(&input, &simul);
-    	tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
+  		tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
 
-    	printf("%d Thread Creat\n",i);
-    	if (tid_simul != 0){
-       	perror("thread creation error: ");
-       	exit(0);
+  		printf("%d Thread Creat\n",i);
+  		if (tid_simul != 0){
+     		perror("thread creation error: ");
+     		exit(0);
    		}
+
    		building_pid[i] = (int)simul_thr;
    		printf("%dth simul_thr : %u\n",i,building_pid[i]);
+	}
 
-    }
-   
-	pthread_join(input_thr, NULL);
 
-	for(int i = 0 ; i < MAX_BUILDING;i++){
+  	for(int i = 0 ; i < MAX_BUILDING;i++){
 
 		pthread_join(simul_thr, NULL);
 	}
-    
+
+
+
+	pthread_join(input_thr, NULL);
+	pthread_join(db_thr, NULL);
+	
 
     return 0;
 }
 
+void *input_f(void *data){
+
+	Input *input = (Input *)data;
+	while(1){
+		if (*input->mode == CALL){
+		}
+		else{
+			scanf(" %c", input->mode);
+		}
+	}
+}
+
+
+
 void *simul_f(void *data){
 
-	printf("Thread Create\n");
+	//printf("Thread Create\n");
 	pthread_t id;
     // 현재 쓰레드의 id 를 얻어서 출력합니다
 	id = pthread_self();
 	int max_floor;
 	int ele_num;
-
-	Elevator *elevators;
-
 	int i;
-    Simul *simul = (Simul *)data;
-    Elevator *response; // 요청에 응답하는 엘리베이터
-    F_node *location;   // 요청이 들어가는 위치
-    Request current;    // 처리할 요청
+
+	char *tmpUserId;
+	char *tmpTimel;
+	char *tmpElevatorId;
+
+	Simul *simul = (Simul *)data;
+	Elevator *elevators;
+	Elevator *response; // 요청에 응답하는 엘리베이터
+	F_node *location;   // 요청이 들어가는 위치
+	Request current;    // 처리할 요청
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
 
     max_floor = DBconector_floor(1);
-    printf("max_floor : %d\n",max_floor);
+    //max_floor = 11;
+    //printf("max_floor : %d\n",max_floor);
 
-    //ele_num = DBconector_ele_num(1);
-    ele_num = 3;
-	printf("ele_num : %d\n",ele_num);
+    ele_num = DBconector_ele_num(1);
+    //ele_num = 3;
+	//printf("ele_num : %d\n",ele_num);
 
 	init_elevator(&elevators,ele_num);
 	(*simul).elevators = &elevators;
+	simul->input->mode = (char *)malloc(sizeof(char));
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+ 	tmpUserId = (char *)malloc(sizeof(char) * 100);
+	
+	//printf("1!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	conn = mysql_init(NULL);
+	/*
+	 for(int i = 1; i <= MAX_BUILDING ; i++){
 
+ 		if(building_pid[*(simul->input->req_elevator_id)] == (int)id){
+ 			
+ 		}
+
+ 	}*/
+
+	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+  	//printf("2!!!!!!!!!!!!!!!!!!!!!!!!!\n");
+	if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+   	res = mysql_use_result(conn);
+  	//printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+
+  		printf("%s \n",row[0]);
+  	}
     while(1){
 
-    	 print_UI((&elevators),ele_num);
-        printf("\n");
-        print_elevator_info((&elevators),ele_num);
-        printf("\n");
+    	sleep(1);
 
-    	if (*simul->input->mode == CALL)
-        {
-            get_request(simul->input);
-        }
-        
-        if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
-        	continue;
-        }
+    	if(mysql_query(conn,"SELECT * FROM Calling where Flag = '0'"))
+  		{
+  		        //return 1;
+  		}
+	
+	  	res = mysql_use_result(conn);
 
+	   	while((row = mysql_fetch_row(res)) != NULL){
+			printf("%s %s %s %s %s %s %s \n",row[0],row[1],row[2],row[3],row[4],row[5],row[6]);
+			if(atoi(row[6]) == 0){
+				printf("This Flag is ZERO!!!!!!!!!!!!!!!!!\n");
+				*simul->input->mode = CALL;
+				//printf("*simul->input->mode : %s\n", simul->input->mode);
+			}
+
+			if (*simul->input->mode == CALL)
+			{
+				get_request(simul->input,atoi(row[4]),atoi(row[1]),atoi(row[2]),1 );
+			}
+			printf("ROW[0] : %s \n",row[0]);
+			strcpy(tmpUserId,row[0]);
+		}
+		//printf("tmpUserId : %s \n",tmpUserId);
+		printf("simul->input->req_elevator_id : %d\n",*simul->input->req_elevator_id);
+		printf("|%d    |   %d  |\n",building_pid[*(simul->input->req_elevator_id)+1], (int)id);
+		printf("------------------------------\n");
+		printf("|%d    |   %d  |\n",building_pid[*(simul->input->req_elevator_id)+1], (int)id);
+			
+
+		if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
+			printf("IN IF\n\n\n");
+			//return 0;
+			continue;
+
+ 		}
+
+ 		system("clear");
+ 		print_UI((&elevators),ele_num,max_floor );
+ 		
+ 		print_elevator_info((&elevators),ele_num);
+ 		printf("\n");		printf("------------------------------\n");		printf("|현재 엘리베이터 아이디 |  %d |\n ",*(simul->input->req_elevator_id));		printf("------------------------------\n");		//printf("building_pid[*(simul->input->req_elevator_id)] != id)\n");		printf("|%d    |   %d  |\n",building_pid[*(simul->input->req_elevator_id)], (int)id);		printf("------------------------------\n");		printf("|%dth elevator called         |\n",*(simul->input->req_elevator_id));		printf("------------------------------\n");
+		printf("DB_Flag_updater\n\n");
        
+       DB_Flag_updater(tmpUserId);
+       insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
 
-		printf("simul->input : %d\n",*(simul->input->req_elevator_id));
-		printf("building_pid[*(simul->input->req_elevator_id)] != id)\n");
-		printf(" %d              %d  \n",building_pid[*(simul->input->req_elevator_id)], (int)id);
-        
-        	printf("%dth elevator called\n",*(simul->input->req_elevator_id));
-        
-        
-        insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people);
-        
-        if (R_list_size(reqs) != 0)
-        {
-            
-            /*여기는 LOOK알고리즘
+       if (R_list_size(reqs) != 0)
+       {
+            //여기는 LOOK알고리즘
 
             current = *R_list_remove(reqs);
-            response = LOOK((simul->elevators),ele_num, &current);
-            //printf("1_LOOK\n");
+            response = LOOK((simul->elevators),ele_num, &current, &tmpUserId);
+            printf("#1_LOOK\n");
             // 요청에 응답하는 엘리베이터에 정보 추가하기
             // 사람 태울 층 추가하기
             location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.start_floor);
-            //printf("2_LOOK\n");
+            printf("#2_LOOK\n");
             F_list_insert(response->pending, location, current.start_floor, current.num_people);
-  			// 사람 내릴 층 추가하기
-            //printf("3_LOOK\n");
+            // 사람 내릴 층 추가하기
+            printf("#3_LOOK\n");
             location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor);
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
-        	*/
-
-			//여기는 C-SCAN알고리즘        	
+        	
+            /*
+			//여기는 C-SCAN알고리즘
         	current = *R_list_remove(reqs);
             response = C_SCAN((simul->elevators),ele_num, &current);
             //printf("1_LOOK\n");
@@ -269,21 +372,26 @@ void *simul_f(void *data){
             //printf("3_LOOK\n");
             location = C_SCAN_up_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor);
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
+			*/
+
         }
         // 엘리베이터 이동시키기
-        printf("MOVE!!!!!!!!!!!\n");
-        move_elevator(simul->elevators, ele_num);
+        printf("move_elevator\n\n");
+        move_elevator(simul->elevators, ele_num, max_floor);
+        
+        printf("sleep\n\n");
         sleep(1);
-
-
+		
     }
 }
-Elevator *LOOK(Elevator **elevators, int num, Request *current){
+
+Elevator *LOOK(Elevator **elevators, int num, Request *current, char **userID){
 
 	F_node **ideal;
 	int *time_required;
 	int ideal_index;
 	int size =num;
+	int min = 100000;
 
 	printf("#1 Look start\n");
 	ideal = (F_node **)malloc(sizeof(F_node *) * size);
@@ -296,6 +404,217 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current){
  		ideal[i] = Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
   		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
+  		min = find_min_time(min,time_required[i]);
+
+ 	}
+
+ 	ideal_index = find_min(time_required, size);
+  	free(time_required);
+  	free(ideal);
+  	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  	printf("MIN : %d\n",min);
+  	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+  	DB_Calling_updater(*userID, min, (ideal_index+1) );
+    printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
+    return *(elevators + sizeof(Elevator)*ideal_index);
+}
+
+void DB_Calling_updater(char *userID, int Time, int elevator_id){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		printf("%s \n",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"UPDATE Calling SET Flag = '2',Time = '%d', Elevator_Id = '%d' where userID = '%s';",Time, elevator_id, userID);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
+void DB_Flag_updater(char *userID){
+
+	printf("#1_DB_Flag_updater\n");
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		printf("%s \n",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"UPDATE Calling SET Flag = '1' where userID = '%s';",userID);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
+
+int DBconector_floor(int id){
+	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL)
+  		printf("%s \n",row[0]);
+
+
+  	if(mysql_query(conn,"SELECT * FROM building"))
+  	{
+  	        return 1;
+  	}
+
+  	res = mysql_use_result(conn);
+
+   	//printf("Returning List of Names : \n");
+   	while((row = mysql_fetch_row(res)) != NULL){
+		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
+		tmp = atoi(row[2]);
+	}
+
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+   return tmp;
+}
+
+
+void get_request(Input *input, int elevator_id, int current_floor, int dest_floor, int people_num)
+{
+    while (1)
+    {
+        printf("엘리베이터 아이디, 현재 층, 목적 층, 몇 명이 타는지 입력하시오. \n");
+        fflush(stdout);
+        //scanf("%d %d %d %d",input->req_elevator_id, input->req_current_floor, input->req_dest_floor, input->req_num_people);
+        //printf("@@@@@@@@@@\n");
+        *input->req_elevator_id =  elevator_id;
+        *input->req_current_floor = current_floor;
+        *input->req_dest_floor = dest_floor;
+        *input->req_num_people = people_num;
+        //printf("@@@@@@@@@@\n");
+        tcflush(0, TCIFLUSH);
+        *input->mode = 0;
+        flag = 1;
+       // printf("@@@@@@@@@@\n");
+        break;
+    }
+}
+
+Elevator *cluster(Elevator **elevators, int num, Request *current){
+
+	F_node **ideal;
+	int *time_required;
+	int ideal_index;
+	int size =num;
+
+	printf("#1 cluster start\n");
+	ideal = (F_node **)malloc(sizeof(F_node *) * size);
+ 	time_required = (int *)malloc(sizeof(int) * size);
+
+ 	printf("#2 cluster start\n");
+ 	for(int i = 0 ; i < num;i++){
+
+ 		ideal[i] = cluster_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
+  		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
+  		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
 
  	}
 
@@ -305,7 +624,23 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current){
 
     printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
     return *(elevators + sizeof(Elevator)*ideal_index);
+
 }
+F_node *cluster_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target){
+
+	int elevator_direction = 0;
+	int call_direction = 0;
+
+	F_list list = (*elevator)->pending;
+
+	F_node *start = list.head->next;
+	F_node *end;
+
+
+}
+
+
+
 F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
 {
 	//printf("1Look_find_ideal_location\n");
@@ -313,13 +648,13 @@ F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_
 	int call_direction = 0;
 	//printf("2Look_find_ideal_location\n");
 	//printf("3Look_find_ideal_location\n");
-    F_list list = (*elevator)->pending;//bug
-     //list = (F *)malloc(sizeof(F_list)); 
+    F_list list = (*elevator)->pending;
+     //list = (F *)malloc(sizeof(F_list));
     //printf("4Look_find_ideal_location\n");
-    
+
     F_node *start = list.head->next;
     F_node *end;
-    
+
     if (F_list_size(list) == 0)
     {
         return start;
@@ -475,18 +810,19 @@ Elevator *C_SCAN(Elevator **elevators, int num, Request *current){
 
 F_node *C_SCAN_up_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
 {
+	//일단은 올라가는 요청만 받는 알고리즘
 	int elevator_direction = 0;
 	int call_direction = 0;
     F_list list = (*elevator)->pending;
 
     F_node *start = list.head->next;
     F_node *end;
-    
+
     if (F_list_size(list) == 0)
     {
         return start;
     }//현재 이동할 노드가 없다면
-
+    //printf("Look_find_ideal_location\n");
     elevator_direction = start->floor - (*elevator)->current_floor;
     if(elevator_direction == 0)// 만약 제자리에 가만히 있는 엘리베이터라면
     {
@@ -511,7 +847,55 @@ F_node *C_SCAN_up_find_ideal_location(Elevator **elevator, int start_floor, int 
                 end = find_direction_change_location(start, elevator_direction);
                 return find_scheduled_place(start, end, start_floor, dest_floor, target);
             }
+            else
+            {
+                // 다음 방향 같아질 때 까지 찾아야 함!
+                start = find_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                start = find_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                end = find_direction_change_location(start, elevator_direction);
+                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+            }
         }
+        else
+        {
+            // 다음 방향 바뀔 때 까지 찾아야 함!
+            start = find_direction_change_location(start, elevator_direction);
+            elevator_direction *= -1;
+            end = find_direction_change_location(start, elevator_direction);
+            return find_scheduled_place(start, end, start_floor, dest_floor, target);
+        }
+    }
+    else
+    {
+    	/*
+        if (elevator_direction < 0)
+        {
+            if (target <= (*elevator)->current_floor)
+            {
+                end = find_direction_change_location(start, elevator_direction);
+                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+            }
+            else
+            {
+                // 다음 방향 같아질 때 까지 찾아야 함!
+                start = find_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                start = find_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                end = find_direction_change_location(start, elevator_direction);
+                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+            }
+        }
+        else
+        {
+            // 다음 방향 바뀔 때 까지 찾아야 함!
+            start = find_direction_change_location(start, elevator_direction);
+            elevator_direction *= -1;
+            end = find_direction_change_location(start, elevator_direction);
+            return find_scheduled_place(start, end, start_floor, dest_floor, target);
+        }*/
     }
 }
 
@@ -531,12 +915,21 @@ void init_input(Input **input)
     (*input)->req_current_floor = (int *)malloc(sizeof(int));
     (*input)->req_dest_floor = (int *)malloc(sizeof(int));
     (*input)->req_num_people = (int *)malloc(sizeof(int));
-	
+
 }
 
 void init_simul(Input **input, Simul **simul)
 {
     int i, j;
+
+    *input = (Input *)malloc(sizeof(Input));
+    (*input)->mode = (char *)malloc(sizeof(char));
+    (*input)->req_elevator_id = (int *)malloc(sizeof(int));
+    (*input)->req_current_floor = (int *)malloc(sizeof(int));
+    (*input)->req_dest_floor = (int *)malloc(sizeof(int));
+    (*input)->req_num_people = (int *)malloc(sizeof(int));
+
+
     reqs.head = (R_node *)malloc(sizeof(R_node));
     reqs.tail = (R_node *)malloc(sizeof(R_node));
     reqs.head->prev = NULL;
@@ -546,12 +939,12 @@ void init_simul(Input **input, Simul **simul)
 
     *simul = (Simul *)malloc(sizeof(Simul));
     (*simul)->input = *input;
-	
+
 }
 
 void init_elevator(Elevator **elevators, int num){
 
-	printf("init_Start\n");
+	//printf("init_Start\n");
     for (int i = 0; i <= num; i++)
     {
          *(elevators + sizeof(Elevator)*i ) = (Elevator *)malloc(sizeof(Elevator));
@@ -576,65 +969,9 @@ void init_elevator(Elevator **elevators, int num){
         (*(elevators + sizeof(Elevator)*i ))->fix = 0;
         (*(elevators + sizeof(Elevator)*i ))->fix_time = 0;
     }
-    printf("init_END\n\n");
+    //printf("init_END\n\n");
 
 }
-
-int DBconector_floor(int id){
-	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
-
-	MYSQL *conn;
- 	MYSQL_RES *res;
- 	MYSQL_ROW row;
-
- 	char *server = "localhost";
- 	char *user = "root";
- 	char *password = "root";
- 	char *database = "capstone";
-
- 	int tmp;
-
- 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
- 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
- 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
-
-	conn = mysql_init(NULL);
-
- 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
- 		exit(1);
-  	}
-
-  	 if(mysql_query(conn,"show tables")){
-
-   		exit(1);
-   	}
-
-	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
-  	while((row = mysql_fetch_row(res)) != NULL)
-  		printf("%s \n",row[0]);
-
-
-  	if(mysql_query(conn,"SELECT * FROM building"))
-  	{
-  	        return 1;
-  	}
-
-  	res = mysql_use_result(conn);
-
-   	printf("Returning List of Names : \n");
-   	while((row = mysql_fetch_row(res)) != NULL){
-		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
-		tmp = atoi(row[2]);
-	}
-
-	
-   mysql_free_result(res);
-   mysql_close(conn);
-
-   return tmp;
-}
-
 int DBconector_ele_num(int id){
 	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
 
@@ -677,41 +1014,20 @@ int DBconector_ele_num(int id){
 
   	res = mysql_use_result(conn);
 
-   	printf("Returning List of Names : \n");
+   	//printf("Returning List of Names : \n");
    	while((row = mysql_fetch_row(res)) != NULL){
 		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
 		tmp = atoi(row[3]);
 	}
 
-	
+
    mysql_free_result(res);
    mysql_close(conn);
 
    return tmp;
 }
 
-Elevator *cluster(Elevator *elevators[6], Request *current){
-
-
-
-}
-
-
-
-void *input_f(void *data){
-
-	Input *input = (Input *)data;
-	while(1){
-		if (*input->mode == CALL){
-		}
-		else{	
-
-			scanf(" %c", input->mode);
-		}
-	}
-}
-
-void move_elevator(Elevator **elevators, int num)
+void move_elevator(Elevator **elevators, int num, int max_floor)
 {
     int i;
     int to_ride = 0; // 태워야 할 사람 수
@@ -778,7 +1094,7 @@ void move_elevator(Elevator **elevators, int num)
                             pair->people = available * -1;
 
                             flag = 1;
-                            insert_into_queue((*(elevators + sizeof(Elevator)*i ))->current_floor, pair->floor, leftover);
+                            insert_into_queue((*(elevators + sizeof(Elevator)*i ))->current_floor, pair->floor, leftover, max_floor);
                         }
                     }
                 }
@@ -788,45 +1104,17 @@ void move_elevator(Elevator **elevators, int num)
 
 }
 
-void socket_server(){
-  //여기서 php랑 통신을 통해 파라미터를 받는다.
-  int   client_socket;
+int find_min_time(int numA, int numB){
 
-  struct sockaddr_in   server_addr;
-
-  char   buff[BUFF_SIZE+5];
-
-  int building_id;
-  int req_current_floor;
-  int req_dest_floor;
-  int req_num_people;
-
-  client_socket  = socket( PF_INET, SOCK_STREAM, 0);
-	if( -1 == client_socket){
-
-		printf( "socket creat fail\n");
-		exit( 1);
+	if(numA > numB){
+		return numB;
+	}else{
+		return numA;
 	}
 
-	memset( &server_addr, 0, sizeof( server_addr));
-	server_addr.sin_family     = AF_INET;
-	server_addr.sin_port       = htons( 60000);
-	server_addr.sin_addr.s_addr= inet_addr( "127.0.0.1");
-
-	if( -1 == connect( client_socket, (struct sockaddr*)&server_addr, sizeof( server_addr) ) ){
-
-		printf( "connect fail\n");
-		exit( 1);
-	}
-
-	//write( client_socket, argv[1], strlen( argv[1])+1);
-	read ( client_socket, buff, BUFF_SIZE);
-	printf( "PHP BUFFER == %s\n", buff);
-	close( client_socket);
 
 
 }
-
 int find_time(F_list list, F_node *target, int start, int end)
 {
     int time = 0;
@@ -857,24 +1145,9 @@ int find_time(F_list list, F_node *target, int start, int end)
     return time;
 }
 
-
-void get_request(Input *input)
+void insert_into_queue(int current_floor, int dest_floor, int num_people, int max_floor)
 {
-    while (1)
-    {
-        printf("엘리베이터 아이디, 현재 층, 목적 층, 몇 명이 타는지 입력하시오. \n");
-        fflush(stdout);
-        scanf("%d %d %d %d",input->req_elevator_id, input->req_current_floor, input->req_dest_floor, input->req_num_people);
-        //printf("%d\n",*input->req_elevator_id);
-        tcflush(0, TCIFLUSH);
-        *input->mode = 0;
-        flag = 1;
-        break;
-    }
-}
-
-void insert_into_queue(int current_floor, int dest_floor, int num_people)
-{
+	//printf("insert_into_queue\n");
     if (flag == 0)
     {
         return;
@@ -884,12 +1157,14 @@ void insert_into_queue(int current_floor, int dest_floor, int num_people)
     {
         return;
     }
-
-    if (current_floor > FLOOR || current_floor < 1 || dest_floor > FLOOR || dest_floor < 1)
+    //printf("insert_into_queue\n");
+    printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
+    if (current_floor > max_floor || current_floor < 1 || dest_floor > max_floor || dest_floor < 1)
     {
         return;
     }
-
+    printf("insert_into_queue\n");
+    printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
     R_list_insert(reqs, current_floor, dest_floor, num_people);
 
     flag = 0;
@@ -1037,10 +1312,10 @@ int find_min(int *arr, int n)
 
 
 
-void print_UI(Elevator **elevators, int num)
+void print_UI(Elevator **elevators, int num, int floor_num)
 {
     int i, j;
-    for (i = 0; i < FLOOR; i++)
+    for (i = 0; i < floor_num; i++)
     {
         printf("    -------------"); //윗칸
 
@@ -1049,10 +1324,10 @@ void print_UI(Elevator **elevators, int num)
         	printf("------------");
         }
         printf("\n");
-        printf("%2dF ", FLOOR - i);
+        printf("%2dF ", floor_num - i);
         for (j = 0; j < num; j++)
         {
-            if ( (*(elevators + sizeof(Elevator)*j ))->current_floor == FLOOR - i)
+            if ( (*(elevators + sizeof(Elevator)*j ))->current_floor == floor_num - i)
             {
                 printf("|");
                 if ((*(elevators + sizeof(Elevator)*j ))->current_floor == (*(elevators + sizeof(Elevator)*j ))->next_dest)
@@ -1087,7 +1362,7 @@ void print_UI(Elevator **elevators, int num)
         	printf("------------");
         }
         printf("\n");
-    
+
 }
 
 void print_elevator_info(Elevator **elevators, int num)
@@ -1098,7 +1373,7 @@ void print_elevator_info(Elevator **elevators, int num)
         printf("엘리베이터 %d | ", i + 1);
         if ((*(elevators + sizeof(Elevator)*i ))->fix)
         {
- 
+
         }
         else if ((*(elevators + sizeof(Elevator)*i ))->current_floor == (*(elevators + sizeof(Elevator)*i ))->next_dest)
         {
@@ -1115,3 +1390,44 @@ void print_elevator_info(Elevator **elevators, int num)
         printf("\n");
     }
 }
+
+/*
+void socket_server(){
+  //여기서 php랑 통신을 통해 파라미터를 받는다.
+  int   client_socket;
+
+  struct sockaddr_in   server_addr;
+
+  char   buff[BUFF_SIZE+5];
+
+  int building_id;
+  int req_current_floor;
+  int req_dest_floor;
+  int req_num_people;
+
+  client_socket  = socket( PF_INET, SOCK_STREAM, 0);
+	if( -1 == client_socket){
+
+		printf( "socket creat fail\n");
+		exit( 1);
+	}
+
+	memset( &server_addr, 0, sizeof( server_addr));
+	server_addr.sin_family     = AF_INET;
+	server_addr.sin_port       = htons( 60000);
+	server_addr.sin_addr.s_addr= inet_addr( "127.0.0.1");
+
+	if( -1 == connect( client_socket, (struct sockaddr*)&server_addr, sizeof( server_addr) ) ){
+
+		printf( "connect fail\n");
+		exit( 1);
+	}
+
+	//write( client_socket, argv[1], strlen( argv[1])+1);
+	read ( client_socket, buff, BUFF_SIZE);
+	printf( "PHP BUFFER == %s\n", buff);
+	close( client_socket);
+
+
+}
+*/
