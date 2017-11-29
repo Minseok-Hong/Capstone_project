@@ -112,9 +112,8 @@ void *simul_f(void *data);
 void *input_f(void *data);
 void *db_f(void *data);
 
-
+void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor);
 void DB_Calling_updater(char *userID, int Time, int elevator_id);
-void DB_Elevator_updater(int building_id);
 void DB_Flag_updater(char *userID);
 void DB_Flag2_updater(char *userID);
 int DBconector_floor(int id);
@@ -378,6 +377,11 @@ void *simul_f(void *data){
         }
         // 엘리베이터 이동시키기
         printf("move_elevator\n\n");
+        for(int i = 1 ; i <= ele_num; i++){
+
+	        	DB_Elevator_updater(*simul->input->req_elevator_id,i,simul->elevators[i]->current_floor);
+        }
+        
         move_elevator(simul->elevators, ele_num, max_floor);
         
         printf("sleep\n\n");
@@ -412,12 +416,61 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current, char **userID){
  	ideal_index = find_min(time_required, size);
   	free(time_required);
   	free(ideal);
-  	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-  	printf("MIN : %d\n",min);
-  	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+
   	DB_Calling_updater(*userID, min, (ideal_index+1) );
-    printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
-    return *(elevators + sizeof(Elevator)*ideal_index);
+  	printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
+  	return *(elevators + sizeof(Elevator)*ideal_index);
+
+}
+
+void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		printf("%s \n",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
 }
 
 void DB_Calling_updater(char *userID, int Time, int elevator_id){
@@ -516,7 +569,7 @@ void DB_Flag_updater(char *userID){
   	}
   	printf("########%s\n",sql);
   	DB_Flag2_updater(userID);
-  	
+
    mysql_free_result(res);
    mysql_close(conn);
 
