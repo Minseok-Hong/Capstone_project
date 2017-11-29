@@ -376,12 +376,19 @@ void *simul_f(void *data){
 
         }
         // 엘리베이터 이동시키기
+        /*
         printf("move_elevator\n\n");
-        for(int i = 1 ; i <= ele_num; i++){
+        for(int i = 0 ; i < ele_num; i++){
 
-	        	DB_Elevator_updater(*simul->input->req_elevator_id,i,simul->elevators[i]->current_floor);
+	        	
+	        	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+	        	printf("@@@@@@@@@@@@@%d \n",i+1);
+	        	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+	        	printf("@@@@@@@@@ %d\n",simul->elevators[i]->current_floor);
+	        	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+	        	//DB_Elevator_updater(*simul->input->req_elevator_id, i+1, simul->elevators[i]->current_floor);
         }
-        
+        */
         move_elevator(simul->elevators, ele_num, max_floor);
         
         printf("sleep\n\n");
@@ -459,7 +466,8 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
 
 
 	char sql[100] = "";
-	sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
+	//sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
+	sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d ;",current_floor, Elevator_Id);
 
   	if(mysql_query(conn,sql))
   	{
@@ -1434,6 +1442,7 @@ void print_UI(Elevator **elevators, int num, int floor_num)
         {
             if ( (*(elevators + sizeof(Elevator)*j ))->current_floor == floor_num - i)
             {
+            	DB_Elevator_updater(1, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
                 printf("|");
                 if ((*(elevators + sizeof(Elevator)*j ))->current_floor == (*(elevators + sizeof(Elevator)*j ))->next_dest)
                 {
