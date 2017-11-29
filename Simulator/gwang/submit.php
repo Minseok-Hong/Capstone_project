@@ -1,20 +1,20 @@
 <?php
 
 function processDrpdown($selectedVal) {
-    //echo "Selected value in php<BR> ".$selectedVal;
+    echo "Selected value in php<BR> ".$selectedVal;
 
-	//echo ("<H5> 아무거나 : $selectedVar  <BR>");
+	echo ("<H5> 아무거나 : $selectedVar  <BR>");
 	
 }        
 
 if ($_POST['dropdownValue']){
 
-	//echo ("<H5> 아무거나 : $selectedVar  <BR>");
+	echo ("<H5> 아무거나 : $selectedVar  <BR>");
 
     //call the function or execute the code
     processDrpdown($_POST['dropdownValue']);
-	//echo "@@@@@@@@@@@@";
-	//echo "Selected value in php<BR> ".$selectedVal;
+	echo "@@@@@@@@@@@@";
+	echo "Selected value in php<BR> ".$selectedVal;
 
 
 }
