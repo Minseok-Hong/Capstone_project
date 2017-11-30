@@ -14,7 +14,7 @@
 #define CALL 'A'
 
 #define BUFF_SIZE   1024
-#define MAX_BUILDING 4 //서버에서 가동할 수 있는 최대 빌딩의 수
+#define MAX_BUILDING 2 //서버에서 가동할 수 있는 최대 빌딩의 수
 #define MAX_PEOPLE 15 // 엘리베이터 정원
 #define MAX_TOTAL 150 // 점검 받아야하는 수
 
@@ -250,11 +250,13 @@ void *simul_f(void *data){
  	char *database = "capstone";
 
 
-    max_floor = DBconector_floor(1);
+    
     //max_floor = 11;
     //printf("max_floor : %d\n",max_floor);
 
-    ele_num = DBconector_ele_num(1);
+ 	max_floor = DBconector_floor(1);
+ 	ele_num = DBconector_ele_num(1);
+    
     //ele_num = 3;
 	//printf("ele_num : %d\n",ele_num);
 
@@ -269,10 +271,11 @@ void *simul_f(void *data){
 	//printf("1!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 	conn = mysql_init(NULL);
 	/*
-	 for(int i = 1; i <= MAX_BUILDING ; i++){
+	 for(int i = 0; i < MAX_BUILDING ; i++){
 
  		if(building_pid[*(simul->input->req_elevator_id)] == (int)id){
- 			
+ 			max_floor = DBconector_floor(*(simul->input->req_elevator_id));
+ 			ele_num = DBconector_ele_num(*(simul->input->req_elevator_id));
  		}
 
  	}*/
@@ -459,7 +462,7 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
    	}
 
 	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
 		printf("%s \n",row[0]);
   	}
@@ -471,10 +474,10 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
 
   	if(mysql_query(conn,sql))
   	{
-  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//printf("###UPDATA ERROR!!!!!!!\n");
   		//return 1;
   	}
-  	printf("########%s\n",sql);
+  	//printf("########%s\n",sql);
 
    mysql_free_result(res);
    mysql_close(conn);
@@ -521,10 +524,10 @@ void DB_Calling_updater(char *userID, int Time, int elevator_id){
 
   	if(mysql_query(conn,sql))
   	{
-  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//printf("###UPDATA ERROR!!!!!!!\n");
   		//return 1;
   	}
-  	printf("########%s\n",sql);
+  	//printf("########%s\n",sql);
 
    mysql_free_result(res);
    mysql_close(conn);
@@ -561,7 +564,7 @@ void DB_Flag_updater(char *userID){
    	}
 
 	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
 		printf("%s \n",row[0]);
   	}
@@ -572,10 +575,10 @@ void DB_Flag_updater(char *userID){
 
   	if(mysql_query(conn,sql))
   	{
-  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//printf("###UPDATA ERROR!!!!!!!\n");
   		//return 1;
   	}
-  	printf("########%s\n",sql);
+  	//printf("########%s\n",sql);
   	DB_Flag2_updater(userID);
 
    mysql_free_result(res);
@@ -613,7 +616,7 @@ void DB_Flag2_updater(char *userID){
    	}
 
 	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
 		printf("%s \n",row[0]);
   	}
@@ -624,10 +627,10 @@ void DB_Flag2_updater(char *userID){
 
   	if(mysql_query(conn,sql))
   	{
-  		printf("###UPDATA ERROR!!!!!!!\n");
+  		//printf("###UPDATA ERROR!!!!!!!\n");
   		//return 1;
   	}
-  	printf("########%s\n",sql);
+  	//printf("########%s\n",sql);
 
    mysql_free_result(res);
    mysql_close(conn);
@@ -664,7 +667,7 @@ int DBconector_floor(int id){
    	}
 
 	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL)
   		printf("%s \n",row[0]);
 
@@ -678,7 +681,7 @@ int DBconector_floor(int id){
 
    	//printf("Returning List of Names : \n");
    	while((row = mysql_fetch_row(res)) != NULL){
-		printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
+		//printf("%s %s %s %s \n",row[0],row[1],row[2],row[3]);
 		tmp = atoi(row[2]);
 	}
 
