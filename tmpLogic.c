@@ -486,6 +486,7 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
 
 void DB_Calling_updater(char *userID, int Time, int elevator_id){
 
+	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 	MYSQL *conn;
  	MYSQL_RES *res;
  	MYSQL_ROW row;
