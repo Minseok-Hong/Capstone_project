@@ -289,7 +289,7 @@ void *simul_f(void *data){
    		exit(1);
    	}
    	res = mysql_use_result(conn);
-  	//printf("MYSQL Tables in mysql database : ");
+  	printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
 
   		printf("%s \n",row[0]);
@@ -477,7 +477,7 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
   		//printf("###UPDATA ERROR!!!!!!!\n");
   		//return 1;
   	}
-  	//printf("########%s\n",sql);
+  	printf("########%s\n",sql);
 
    mysql_free_result(res);
    mysql_close(conn);
@@ -520,14 +520,14 @@ void DB_Calling_updater(char *userID, int Time, int elevator_id){
 
 
 	char sql[100] = "";
-	sprintf( sql,"UPDATE Calling SET Flag = '2', Time = '%d', Elevator_Id = '%d' where userID = '%s';",Time, elevator_id, userID);
+	sprintf( sql,"UPDATE Calling SET Time = '%d', Elevator_Id = '%d' where userID = '%s';",Time, elevator_id, userID);
 
   	if(mysql_query(conn,sql))
   	{
   		//printf("###UPDATA ERROR!!!!!!!\n");
   		//return 1;
   	}
-  	//printf("########%s\n",sql);
+  	printf("########%s\n",sql);
 
    mysql_free_result(res);
    mysql_close(conn);
