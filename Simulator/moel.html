@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+   <meta charset="UTF-8">
+   <title>모두의 엘리베이터</title>
+   <style>
+      #container {
+         width:960px;
+         margin:0 auto;
+         text-align:center;
+      }
+      #content1 {
+      	width: 300px;
+      	position: absolute;
+      	top: 100; left: 0;
+      	padding: 10px;
+      }
+      #content2 {
+      	width: 500px;
+      	position: absolute;
+      	top: 100; right: 0;
+      	padding: 10px;
+      }
+   </style>
+   <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+</head>
+<body>
+   <div id="container">
+   	<p>
+   		<img src="pic1.jpg" alt="title" border="3px">
+   	</p>
+</div>
+<div id="content1">
+	<p>
+		<td>해당 엘리베이터 선택</td>
+		<td> <select name='authority'>
+			<option value='' selected>-- 선택 --</option>
+			<option value='0'>팔달</option>
+			<option value='1'>성호</option>
+			<option value='2'>원천</option>
+		</select>
+		<td colspan="2" align="center">
+			<input type="submit" value="보기">
+		</td>
+	</td>
+	<img src="elevator.png" alt="elevator" width="300" height="300" border= "0">
+   	</p>
+</div>
+<div id="content2">
+	<p>
+		<input type = "image" src = "graph.png" width="300" height="300" border = "0" onclick="window.open('http://localhost:80/graph.html','win')";>
+   	</p>
+</div>
+</body>
+</html>
