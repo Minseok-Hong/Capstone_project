@@ -232,6 +232,7 @@ void *simul_f(void *data){
 	int i;
 	int Elevator_num, Building_Floor, Test_Num, Start_time, Finish_time, Uprate;
 	int tmp_start_time, tmp_current_floor, tmp_go_floor;
+	long pointer_location;
 	int timeCheck =0;
 
 	FILE *f;
@@ -301,8 +302,7 @@ void *simul_f(void *data){
 	char inputMaker[100] ="";
 	sprintf(inputMaker,"./InputMaker %d %d %d %d",Test_Num, (Finish_time- Start_time)*60 , Building_Floor, Uprate);
 	system(inputMaker);
-	//printf("inputMaker : %s\n",inputMaker);
-
+	
    mysql_free_result(res);
    mysql_close(conn);
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -318,7 +318,9 @@ void *simul_f(void *data){
  	f = fopen("testCase.txt" ,"r");
 
  	fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+ 	//printf("Test : %d %d %d\n",tmp_start_time, tmp_current_floor, tmp_go_floor);
 
+ 	
  	while(1){
  		system("clear");
  		printf("\n==========================\n");
@@ -328,24 +330,45 @@ void *simul_f(void *data){
  		printf("|tmp_go_floor :  %3d     |\n",tmp_go_floor);
  		printf("==========================\n");
  		
-    	if(tmp_start_time == timeCheck){
+    	if(tmp_start_time == timeCheck){//현재 시간과 데이터의 시간이 같은 경우
     		*simul->input->mode = CALL;
+
     	}
-		else{
-			
+		else{//현재 시간과 데이터의 시간이 다른경우
+
  			print_UI((&elevators),ele_num,max_floor );
- 			usleep(Time_InterNal);
+ 			//usleep(Time_InterNal);
  			print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);
 			move_elevator(simul->elevators, ele_num, max_floor);
 			usleep(Time_InterNal);
 			timeCheck++;
 			continue;
 		}
-		printf("@@@@@@@@@@@@@@@@@@@@\n");
+		
 		if (*simul->input->mode == CALL)
 		{
 			get_request(simul->input,1,tmp_current_floor, tmp_go_floor,1, &cumulative_user_number );
 			fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+			//printf("Test : %d %d %d\n",tmp_start_time, tmp_current_floor, tmp_go_floor);
+
+
+
+		}
+		insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
+		
+		while(!feof(f)){
+
+			if(tmp_start_time != timeCheck){
+				break;
+			}
+			else{
+				*simul->input->mode = CALL;
+				get_request(simul->input,1,tmp_current_floor, tmp_go_floor,1, &cumulative_user_number );
+				insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
+				fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+				//printf("Test : %d %d %d\n",tmp_start_time, tmp_current_floor, tmp_go_floor);
+				//return 0;
+			}
 		}
 /*
 		if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
@@ -355,12 +378,18 @@ void *simul_f(void *data){
  		}
 */
  		system("clear");
+ 		printf("\n==========================\n");
+ 		printf("|현재 시간 : %6d      |\n",timeCheck);
+ 		printf("|tmp_start_time : %6d |\n",tmp_start_time);
+ 		printf("|tmp_current_floor : %3d |\n",tmp_current_floor);
+ 		printf("|tmp_go_floor :  %3d     |\n",tmp_go_floor);
+ 		printf("==========================\n");
  		print_UI((&elevators),ele_num,max_floor );
-
  		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);
-       insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
+       //insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
 
-       if (R_list_size(reqs) != 0)
+       //if (R_list_size(reqs) != 0)
+       while(R_list_size(reqs) != 0)
        {
             //여기는 LOOK알고리즘
 
@@ -395,17 +424,17 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current, int *person_fore
 	int size =num;
 	int min = 100000;
 
-	printf("#1 Look start\n");
+	//printf("#1 Look start\n");
 	ideal = (F_node **)malloc(sizeof(F_node *) * size);
  	time_required = (int *)malloc(sizeof(int) * size);
 
 
- 	printf("#2 Look start\n");
+ 	//printf("#2 Look start\n");
  	for(int i = 0 ; i < num;i++){
 
  		ideal[i] = Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
-  		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
+  		//printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
   		min = find_min_time(min,time_required[i]);
 
  	}
@@ -416,30 +445,9 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current, int *person_fore
 
   	*person_forecast_latency += min;
 
-  	printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
+  	//printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
   	return *(elevators + sizeof(Elevator)*ideal_index);
 
-}
-
-void get_request(Input *input, int elevator_id, int current_floor, int dest_floor, int people_num, int *cumulative_user_number)
-{
-    while (1)
-    {
-        printf("엘리베이터 아이디, 현재 층, 목적 층, 몇 명이 타는지 입력하시오. \n");
-        fflush(stdout);
-
-        //printf("elevator_id : %d\n",elevator_id);
-        *input->req_elevator_id =  elevator_id;
-        *input->req_current_floor = current_floor;
-        *input->req_dest_floor = dest_floor;
-        *input->req_num_people = people_num;
-        *cumulative_user_number +=1;
-
-        tcflush(0, TCIFLUSH);
-        *input->mode = 0;
-        flag = 1;
-        break;
-    }
 }
 
 F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
@@ -531,6 +539,27 @@ F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_
     }
 }
 
+void get_request(Input *input, int elevator_id, int current_floor, int dest_floor, int people_num, int *cumulative_user_number)
+{
+    while (1)
+    {
+        //printf("엘리베이터 아이디, 현재 층, 목적 층, 몇 명이 타는지 입력하시오. \n");
+        fflush(stdout);
+
+        //printf("elevator_id : %d\n",elevator_id);
+        *input->req_elevator_id =  elevator_id;
+        *input->req_current_floor = current_floor;
+        *input->req_dest_floor = dest_floor;
+        *input->req_num_people = people_num;
+        *cumulative_user_number +=1;
+
+        tcflush(0, TCIFLUSH);
+        *input->mode = 0;
+        flag = 1;
+        break;
+    }
+}
+
 F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target)
 {
     F_node *current = start;
@@ -583,16 +612,16 @@ Elevator *C_SCAN(Elevator **elevators, int num, Request *current){
 	int ideal_index;
 	int size =num;
 
-	printf("#1 C_SCAN start\n");
+	//printf("#1 C_SCAN start\n");
 	ideal = (F_node **)malloc(sizeof(F_node *) * size);
  	time_required = (int *)malloc(sizeof(int) * size);
 
- 	printf("#2 C_SCAN start\n");
+ 	//printf("#2 C_SCAN start\n");
  	for(int i = 0 ; i < num;i++){
 
  		ideal[i] = C_SCAN_up_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
-  		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
+  		//printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
 
  	}
 
@@ -600,7 +629,7 @@ Elevator *C_SCAN(Elevator **elevators, int num, Request *current){
   	free(time_required);
   	free(ideal);
 
-    printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
+    //printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
     return *(elevators + sizeof(Elevator)*ideal_index);
 }
 
@@ -902,13 +931,13 @@ void insert_into_queue(int current_floor, int dest_floor, int num_people, int ma
         return;
     }
     //printf("insert_into_queue\n");
-    printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
+    //printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
     if (current_floor > max_floor || current_floor < 1 || dest_floor > max_floor || dest_floor < 1)
     {
         return;
     }
-    printf("insert_into_queue\n");
-    printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
+    //printf("insert_into_queue\n");
+    //printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
     R_list_insert(reqs, current_floor, dest_floor, num_people);
 
     flag = 0;
@@ -944,7 +973,7 @@ Request *R_list_remove(R_list list)
 
 void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people)
 {
-	printf("R_list_insert(%d %d %d)\n", current_floor,dest_floor,num_people);
+	//printf("R_list_insert(%d %d %d)\n", current_floor,dest_floor,num_people);
     R_node *new_node = (R_node *)malloc(sizeof(R_node));
     new_node->next = list.tail;
     new_node->prev = new_node->next->prev;
@@ -1132,8 +1161,22 @@ void print_elevator_info(Elevator **elevators, int num , int person_forecast_lat
         print_F_list((*(elevators + sizeof(Elevator)*i ))->pending);
         printf("\n");
     }
-    printf("예측 평균 대기시간 누적| %d초\n",person_forecast_latency);
-    printf("누적 이용 사람 숫자    | %d명\n",cumulative_user_number);
+    printf("\n====================================\n");
+    printf("|예측 대기시간 누적       |%6d초|\n",person_forecast_latency);
+    printf("|누적 이용 사람 숫자      |%6d명|\n",cumulative_user_number);
+    printf("====================================\n");
+    double person_forecast_latency_average;
+
+    if(cumulative_user_number == 0){
+    	person_forecast_latency_average =0;
+    }
+    else{
+    	person_forecast_latency_average = ((double)person_forecast_latency/(double)cumulative_user_number) /*+ ((double)person_forecast_latency % (double)cumulative_user_number)*/;	
+    }
+    
+    printf("|개인당 평균 예상 대기시간| %3.3f초|\n",person_forecast_latency_average);
+    printf("====================================\n");
+
 }
 
 
