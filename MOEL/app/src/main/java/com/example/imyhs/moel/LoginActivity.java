@@ -51,7 +51,9 @@ public class LoginActivity extends AppCompatActivity {
                         try
                         {
                             JSONObject jsonResponse = new JSONObject(response);
+
                             boolean success = jsonResponse.getBoolean("success");
+
                             if(success){
                                 AlertDialog.Builder builder = new AlertDialog.Builder(LoginActivity.this);
                                 dialog = builder.setMessage("로그인에 성공했습니다.")
@@ -60,14 +62,14 @@ public class LoginActivity extends AppCompatActivity {
 
                                 dialog.show();
 
-                                if(userID.equals("admin"))
-                                {
-                                    Intent intentAdmin = new Intent(LoginActivity.this, AdminActivity.class);
-                                    LoginActivity.this.startActivity(intentAdmin);
-                                }else {
-                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
-                                    LoginActivity.this.startActivity(intent);
-                                }
+//                                if(userID.equals("admin"))
+//                                {
+//                                    Intent intentAdmin = new Intent(LoginActivity.this, AdminActivity.class);
+//                                    LoginActivity.this.startActivity(intentAdmin);
+//                                }else {
+//                                    Intent intent = new Intent(LoginActivity.this, MainActivity.class);
+//                                    LoginActivity.this.startActivity(intent);
+//                                }
                                 finish();
                             }
                             else{
