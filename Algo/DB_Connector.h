@@ -4,3 +4,4 @@ void DB_Flag_updater(char *userID);
 void DB_Flag2_updater(char *userID);
 int DBconector_floor(int id);
 int DBconector_ele_num(int id);
+int DBconector_flag();
