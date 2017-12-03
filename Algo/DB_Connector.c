@@ -11,6 +11,80 @@
 #include <sys/socket.h>
 #include "/usr/include/mysql/mysql.h"
 
+typedef struct _REQUEST
+{
+    int start_floor; //현재층(요청이 이루어지는)
+    int dest_floor;  //목적층
+    int num_people;  //몇 명이 타는지
+} Request;
+
+typedef struct _FLOORNODE
+{
+    struct _FLOORNODE *prev;
+    struct _FLOORNODE *next;
+    int floor;  // -1 : 점검
+    int people; //+ 태운다, - 내린다
+} F_node;
+
+typedef struct _REQUESTNODE
+{
+    struct _REQUESTNODE *prev;
+    struct _REQUESTNODE *next;
+    Request req;
+} R_node;
+
+typedef struct _FLOORLIST
+{
+    F_node *head;
+    F_node *tail;
+} F_list;
+// 해당엘리베이터에 맞는 연결 리스트를 만든다. 이 리스트를 통해서 최고 마지막 도착지를 알 수 있다.
+
+typedef struct _REQUESTLIST
+{
+    R_node *head;
+    R_node *tail;
+} R_list;
+
+/* 엘리베이터 구조체 */
+typedef struct _ELEVATOR
+{
+    int current_floor;
+    int next_dest;
+    int current_people;
+    int total_people;
+    int fix;
+    int fix_time;
+    F_list pending;
+} Elevator;
+
+typedef struct _INPUT
+{
+    char *mode;
+    int *req_elevator_id;
+    int *req_current_floor;
+    int *req_dest_floor;
+    int *req_num_people;
+} Input;
+
+typedef struct _SIMUL
+{
+    Elevator **elevators;
+    Input *input;
+} Simul; // 시뮬레이션 구조체
+
+typedef struct _DATABASE
+{
+	int *USER_ID;
+	int *start_floor;
+	int *dest_floor;
+	char **time;
+	int *Building_Id;
+	int *Elevator_id;
+	int flag;
+
+} Database;
+
 void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor);
 void DB_Calling_updater(char *userID, int Time, int elevator_id);
 void DB_Flag_updater(char *userID);
@@ -18,6 +92,7 @@ void DB_Flag2_updater(char *userID);
 int DBconector_floor(int id);
 int DBconector_ele_num(int id);
 int DBconector_flag();
+
 int DBconector_ele_num(int id){
 	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
 
@@ -48,9 +123,9 @@ int DBconector_ele_num(int id){
    	}
 
 	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL)
-  		printf("%s \n",row[0]);
+  		printf("%s ",row[0]);
 
 
   	if(mysql_query(conn,"SELECT * FROM building"))
@@ -102,9 +177,9 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
    	}
 
 	res = mysql_use_result(conn);
-  	//printf("MYSQL Tables in mysql database : ");
+  	////printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
-		//printf("%s \n",row[0]);
+		//printf("%s ",row[0]);
   	}
 
 
@@ -153,9 +228,9 @@ void DB_Calling_updater(char *userID, int Time, int elevator_id){
    	}
 
 	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
-		printf("%s \n",row[0]);
+		printf("%s ",row[0]);
   	}
 
 
@@ -204,9 +279,9 @@ void DB_Flag_updater(char *userID){
    	}
 
 	res = mysql_use_result(conn);
-  	//printf("MYSQL Tables in mysql database : ");
+  	////printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
-		printf("%s \n",row[0]);
+		printf("%s ",row[0]);
   	}
 
 
@@ -256,9 +331,9 @@ void DB_Flag2_updater(char *userID){
    	}
 
 	res = mysql_use_result(conn);
-  	//printf("MYSQL Tables in mysql database : ");
+  	////printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
-		printf("%s \n",row[0]);
+		printf("%s ",row[0]);
   	}
 
 
@@ -307,9 +382,9 @@ int DBconector_floor(int id){
    	}
 
 	res = mysql_use_result(conn);
-  	//printf("MYSQL Tables in mysql database : ");
+  	////printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL)
-  		printf("%s \n",row[0]);
+  		printf("%s ",row[0]);
 
 
   	if(mysql_query(conn,"SELECT * FROM building"))
@@ -360,9 +435,9 @@ int DBconector_flag(){
    	}
 
 	res = mysql_use_result(conn);
-  	//printf("MYSQL Tables in mysql database : ");
+  	////printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
-  		//printf("%s \n",row[0]);
+  		printf("%s ",row[0]);
   	}
   		
 
@@ -375,7 +450,7 @@ int DBconector_flag(){
   	res = mysql_use_result(conn);
 
    	while((row = mysql_fetch_row(res)) != NULL){
-		//printf("%s \n",row[0]);
+		//printf("%s ",row[0]);
 		tmp = atoi(row[0]);
 	}
 

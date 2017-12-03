@@ -154,13 +154,13 @@ int flag = 0;
 ///////////////////////////////////////////////////////////////////////
 int main()
 {
- 
+
  	Input *input;
 
- 	pthread_t input_thr; 
+ 	pthread_t input_thr;
  	pthread_t simul_thr;
  	pthread_t db_thr;
-	
+
  	//pthread_t socket_thr;
 	int tid_db;
 	int tid_input;
@@ -197,11 +197,9 @@ int main()
 		pthread_join(simul_thr, NULL);
 	}
 
-
-
 	pthread_join(input_thr, NULL);
 	pthread_join(db_thr, NULL);
-	
+
 
     return 0;
 }
@@ -247,37 +245,24 @@ void *simul_f(void *data){
  	char *password = "root";
  	char *database = "capstone";
 
-    int person_forecast_latency =0;//현재까지 누적된 예측 평균 대기시간
+	int person_forecast_latency =0;//현재까지 누적된 예측 평균 대기시간
 	int cumulative_user_number =0;//누적 이용 사람 숫자
 	int person_real_latency =0;//실제 개인이 기다린 대기시간
 	int moved_people_number =0;  //현재까지 이동시킨 누적 사람수
-    //max_floor = 11;
-    //printf("max_floor : %d\n",max_floor);
-
+   
  	max_floor = DBconector_floor(1);
  	ele_num = DBconector_ele_num(1);
-    
-    //ele_num = 3;
-	//printf("ele_num : %d\n",ele_num);
 
 	init_elevator(&elevators,ele_num);
 	(*simul).elevators = &elevators;
 	simul->input->mode = (char *)malloc(sizeof(char));
+ 	
  	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
  	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
  	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
  	tmpUserId = (char *)malloc(sizeof(char) * 100);
 
 	conn = mysql_init(NULL);
-	/*
-	 for(int i = 0; i < MAX_BUILDING ; i++){
-
- 		if(building_pid[*(simul->input->req_elevator_id)] == (int)id){
- 			max_floor = DBconector_floor(*(simul->input->req_elevator_id));
- 			ele_num = DBconector_ele_num(*(simul->input->req_elevator_id));
- 		}
-
- 	}*/
 
 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
  		exit(1);
@@ -292,17 +277,17 @@ void *simul_f(void *data){
   	printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
 
-  		printf("%s \n",row[0]);
+  		//printf("%s \n",row[0]);
   	}
     while(1){
 
-    	usleep(1);
+    	usleep(10000);
 
     	if(mysql_query(conn,"SELECT * FROM Calling where Flag = '0'"))
   		{
   		        //return 1;
   		}
-	
+
 	  	res = mysql_use_result(conn);
 
 	   	while((row = mysql_fetch_row(res)) != NULL){
@@ -322,7 +307,7 @@ void *simul_f(void *data){
 		}
 
 		if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
-			
+
 			//return 0;
 			continue;
 
@@ -330,19 +315,9 @@ void *simul_f(void *data){
 
  		system("clear");
  		print_UI((&elevators),ele_num,max_floor );
- 		
- 		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);		
- 		/*
- 		printf("\n------------------------------\n");		
- 		printf("|현재 엘리베이터 아이디 |  %d |\n ",*(simul->input->req_elevator_id));		
- 		printf("------------------------------\n");		
- 		printf("building_pid[*(simul->input->req_elevator_id)] != id)\n");		
- 		printf("|%d    |   %d  |\n",building_pid[*(simul->input->req_elevator_id)], (int)id);		
- 		printf("------------------------------\n");		
- 		printf("|%dth elevator called         |\n",*(simul->input->req_elevator_id));		
- 		printf("------------------------------\n");
-		printf("DB_Flag_updater\n\n");
-       */
+
+ 		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);
+
        DB_Flag_updater(tmpUserId);
        insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
 
@@ -362,43 +337,15 @@ void *simul_f(void *data){
             printf("#3_LOOK\n");
             location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor);
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
-        	
-            /*
-			//여기는 C-SCAN알고리즘
-        	current = *R_list_remove(reqs);
-            response = C_SCAN((simul->elevators),ele_num, &current);
-            //printf("1_LOOK\n");
-            // 요청에 응답하는 엘리베이터에 정보 추가하기
-            // 사람 태울 층 추가하기
-            location = C_SCAN_up_find_ideal_location(&response, current.start_floor, current.dest_floor, current.start_floor);
-            //printf("2_LOOK\n");
-            F_list_insert(response->pending, location, current.start_floor, current.num_people);
-  			// 사람 내릴 층 추가하기
-            //printf("3_LOOK\n");
-            location = C_SCAN_up_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor);
-            F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
-			*/
 
         }
         // 엘리베이터 이동시키기
-        /*
-        printf("move_elevator\n\n");
-        for(int i = 0 ; i < ele_num; i++){
 
-	        	
-	        	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-	        	printf("@@@@@@@@@@@@@%d \n",i+1);
-	        	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-	        	printf("@@@@@@@@@ %d\n",simul->elevators[i]->current_floor);
-	        	printf("@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
-	        	//DB_Elevator_updater(*simul->input->req_elevator_id, i+1, simul->elevators[i]->current_floor);
-        }
-        */
         move_elevator(simul->elevators, ele_num, max_floor);
-        
+
         printf("sleep\n\n");
         sleep(1);
-		
+
     }
 }
 
@@ -1148,5 +1095,9 @@ void print_elevator_info(Elevator **elevators, int num , int person_forecast_lat
         printf("\n");
     }
     printf("예측 평균 대기시간 누적| %d초\n",person_forecast_latency);
-    printf("누적 이용 사람 숫자    | %d명\n",cumulative_user_number);    
+    printf("누적 이용 사람 숫자    | %d명\n",cumulative_user_number);
 }
+
+
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
