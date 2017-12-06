@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+   <meta charset="UTF-8">
+   <title>
+        </title>
+
+                <p><img src="Title.png" alt="title"  width ="760" height="190" style = "margin-left: auto; margin-right: auto; display:block;"></p>
+ <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+
+</head>
+
+<body>
+	<p>Current_Floor = <span id="current" value=""></span></p>
+
+<?php
+//        $inputValue = $_POST['inputValue'];
+
+        $host = 'localhost';
+        $user = 'root';
+        $pw = 'root';
+        $dbName = 'capstone';
+
+        mysql_connect($host, $user, $pw);
+        mysql_select_db($dbName);
+
+        $sql = "SELECT Building_Name, Building_Floor, Elevator_Number FROM building where Building_Id = 1";
+        $result = mysql_query($sql);
+
+        while($row = MySQL_fetch_array($result)){
+
+        $ele_Name = $row[ Building_Name];
+        $ele_Floor = $row[ Building_Floor];
+        $ele_Number = $row[ Elevator_Number];
+
+	}
+	$sql1 = "select Elevator_Id from elevator where Building_Id=1";
+        $result1 = mysql_query($sql1);
+	while($row = mysql_fetch_array($result1)){
+		$ele[]= $row['Elevator_Id'];
+	}
+
+  for($count =1; $count <= $ele_Number; $count++)
+  {
+     $i = $count -1;
+     echo '<link rel="stylesheet" type="text/css" href="style.css">';
+     echo '<script src="jquery-2.0.2.min.js"></script>';
+     echo '<script src="script.js"></script>';
+     echo '<div id= "'.$ele[$i].'" div class="tower">';
+
+  for($floor=1; $floor <= $ele_Floor; $floor++)
+  {
+     $f = $floor +20;	
+     echo '<div id= "'.$f.'" class="floor">';
+     echo $ele_Floor-$floor+1;
+     echo '</div> ';
+  }
+     $incre = $count + 10;
+
+     echo '<img id="'.$incre.'" class="elevator" src="elevator_main.jpg">';
+     echo '</div> ';
+  }
+
+?>
+
+	<script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+	<script>
+	var pass;
+		(function() {
+			var poll = function(){
+			$.ajax({
+				url:'/gwang/sample.php',
+				dataType: 'json',
+				type: 'get',
+				async:false,
+				success: function(data){
+					console.log(data[0]);
+					$('#current').text(data[0]);
+					tex(data[0]);
+				//	if()	
+
+				},
+				error: function(data){
+					//console.log(data);
+				}
+				});
+			};
+			setInterval(function(){
+				poll();
+			},1000);
+			
+			}
+		)();
+
+			var tex = (function(mv){
+				
+				var num = mv;
+				var t1 = $('#1');
+				var f1 = $('#21');
+				var e1 = $('#11');
+				var e2 = $('#12');
+				//받아온 아이디대로 엘리베이터에 아이디 부여
+				//문열고 닫기
+				//e1.offset({top:f1.position().top+(290-(10-mv)*60)});
+						//290 - 1층, 230 2층		
+				e1.animate({top:f1.position().top+620-(60*mv)},1000);
+				e2.animate({top:f1.position().top+620-(60*mv)},1000);
+				//엘리베이터 위치 맞추기
+				//+100 4층
+			});
+
+
+	</script>
+
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src ="jquery-2.0.2.min.js"></script>
+<script src="script.js"></script>
+<img id="leftDoor" src="elevator_left.jpg" width="25" height="50" align="right">
+<img id="rightDoor" src="elevator_right.jpg">
+</body>
+</html>
+

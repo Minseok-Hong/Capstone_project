@@ -39,11 +39,11 @@
   cursor: default;
   position: absolute;
 }
-}
+
 </style>
 <script type="text/javascript" src="http://code.jquery.com/jquery-3.2.0.min.js" ></script>
 <script type="text/javascript">
-  $(document).ready(function(){
+   $(document).ready(function(){
     var elevator = $('.elevator');
     var floors = $('.floor');
     var f1 = $('#f1');
@@ -52,16 +52,16 @@
     elevator.css({
       top: f1.position().top+20,
     })
-    elevator.click(function(event) {
+   /* elevator.click(function(event) {
       $('div:animated').stop()
       $('div:animated').fadeOut('fast');
       $('div:animated').fadeIn('fast');
       $('div:animated').animate({param1: value1, param2: value2}, speed)
     });
-    floors.each(function() {
+   */ floors.each(function() {
       var pos = $(this).position();
       if(move==5){
-        elevator.delay(500).animate({top: pos.top+20}, 1000);
+        elevator.animate({top: pos.top});
       }
     });
   });
@@ -85,6 +85,5 @@
     <div id="f1" class="floor">1층</div>
     <img id="f0" class="elevator" src="elevator.png">
   </div>
-	
 </body>
 </html>

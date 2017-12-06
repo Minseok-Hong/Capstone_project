@@ -2,10 +2,7 @@
 <html lang="ko">
 <head>
    <meta charset="UTF-8">
-   <title>
-	</title>
-
-		<p><img src="Title.png" alt="title"  width ="760" height="190" style = "margin-left: auto; margin-right: auto; display:block;"></p>
+   <title>모두의 엘리베이터</title>
 <!--   <style>
       #container {
          width:960px;
@@ -30,9 +27,9 @@
 </head>
 <body>
    <div id="container">
-
+   	<p>모두의 엘리베이터</p>
 </div>
-<div style = "text-align:center">
+
 해당 엘리베이터 선택
 <?php
     	$host = 'localhost';
@@ -44,7 +41,7 @@
 	mysql_select_db($dbName);
 	$sql = "SELECT Building_Id, Building_Name FROM building";
 	$result = mysql_query($sql);
-	echo "<select id='myDropDown' name = 'myDropDown' align='absmiddle'>";
+	echo "<select id='myDropDown' name = 'myDropDown'>";
 	while ($row = mysql_fetch_array($result)) {
     		echo "<option value='" . $row['Building_Id'] . "'>" . $row['Building_Name'] . "</option>";
 	}
@@ -52,10 +49,34 @@
 	
 	//여기가 위에가 드롭다운 리스트 만드는 php
 ?>
-</div>
-<form method ="post" action = "/gwang/4.html">
-<div id ="ele_id"></div>
+<?php
+
+	$host = 'localhost';
+	$user = 'root';
+	$pw = 'root';
+	$dbName = 'capstone';
+
+	mysql_connect($host, $user, $pw);
+	mysql_select_db($dbName);
+	$sql = "select Building_Id, Elevator_Id, Current_Floor from getCurr";
+	$result = mysql_query($sql);
+	
+	while($row = mysql_fetch_array($result))
+	{
+		echo $row['Building_Id'];
+		echo $row['Elevator_Id'];
+		echo $row['Current_Floor'];
+	}
+
+
+
+?>
+
+<form method ="post" action = "/gwang/5.html">
+<td> <input type="submit" value = "보기"/></td>
+엘리베이터 아이디<p id="ele_id"></p> 
 <div id ="name_feedback"></div>
+
 </form>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
         <script>//드롭다운 리스트가 변경되면 일어나는 스크립트
@@ -67,22 +88,17 @@
 		//document.write(inputValue);
                 document.getElementById('ele_id').innerHTML = inputValue;
 		//Ajax for calling php function
-		//inputValue.style.display ='none';		
-//		setInterval
-		setInterval($.post('/gwang/4.html', { inputValue: inputValue }, function(data){
+		
+			
+		$.post('/gwang/5.html', { inputValue: inputValue }, function(data){
                     //alert('ajax completed. Response:  '+data);
                     //do after submission operation in DOM
-		    //var result = $('.result').html(data);
+	//			var result = $('.result').html(data);
 		$('#name_feedback').html(data);
-		    //ele_id = $('#ele_id');
-//		document.getElementById('name_feedback').innerHTML = inputValue;							
-		}),5);
-		
+					
+		});
             });
         });
-
-
-
 </script>
 
 </body>
