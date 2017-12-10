@@ -1,0 +1,132 @@
+<html>
+<head>
+<title>SIMULATION</title>
+</head>
+
+<body>
+
+<?php
+	$inputValue = $_POST['inputValue'];
+	
+	$host = 'localhost';
+        $user = 'root';
+        $pw = 'root';
+        $dbName = 'capstone';
+
+        mysql_connect($host, $user, $pw);
+        mysql_select_db($dbName);
+
+	$sql = "SELECT Building_Name, Building_Floor, Elevator_Number FROM building where Building_Id = ($inputValue)";
+        $result = mysql_query($sql);
+
+
+        while($row = MySQL_fetch_array($result)){
+
+        $ele_Name = $row[ Building_Name];
+        $ele_Floor = $row[ Building_Floor];
+        $ele_Number = $row[ Elevator_Number];
+
+        echo"
+
+        <table border=1 width=600 cellspacing=0 cellpadding =2 align=center>
+        <tr align = center>
+                <td width = 50>빌딩이름</td><td width=50>$ele_Name</td>
+                <td width = 50>빌딩층수</td><td width=50>$ele_Floor</td>
+                <td width = 50>엘리베이터수</td><td width=50>$ele_Number</td>
+
+        </tr>
+        </table><br>";
+}
+	$sql1 = "select Elevator_Id from elevator where Building_Id=($inputValue)";
+	$result1 = mysql_query($sql1);
+
+	while($row = mysql_fetch_array($result1)){
+		
+        $ele_Id = $row[ Elevator_Id];
+	
+        /*echo"
+
+        <table border=1 width=600 cellspacing=0 cellpadding =2 align=center>
+        <tr align = center>
+               
+                <td width = 50>엘리베이터 id</td><td width=50>$ele_Id</td>
+
+        </tr>
+        </table><br>";
+	*/
+	}
+	
+
+  for($count =1; $count <= $ele_Number; $count++)
+  {
+     echo '<link rel="stylesheet" type="text/css" href="style.css">';
+     echo '<script src="jquery-2.0.2.min.js"></script>';
+     echo '<script src="script.js"></script>';
+     echo '<div class="tower">';
+   
+  for($floor=1; $floor <= $ele_Floor; $floor++)
+  {
+      
+     echo '<div id= "'.$floor.'" class="floor">';
+     echo $ele_Floor-$floor+1;
+     echo '</div> ';
+  }
+     $incre = $count + 10;
+     	
+     echo '<img id="'.$incre.'" class="elevator" src="elevator.png">';
+     echo '</div> ';
+  }
+  
+?>
+<?php
+
+   
+     $host = 'localhost';
+     $user = 'root';
+     $pw = 'root';
+     $dbName = 'capstone';
+
+     mysql_connect($host, $user, $pw);
+     mysql_select_db($dbName);
+ 
+     $sql = "select Building_Id, Elevator_Id, Current_Floor from getCurr";
+     $result = mysql_query($sql);
+
+     while($row = mysql_fetch_array($result))
+        {
+                $current_floor =  $row[ Current_Floor];
+        }
+
+     echo '<script type="text/javascript" src="http://code.jquery.com/jquery-3.2.0.min.js" ></script>';
+     echo '<script type="text/javascript"></script>';
+     echo("<script language='javascript'>moveElevator(\"$current_floor\")</script>");
+	
+?>
+
+
+<script>
+
+function moveElevator(move)
+{
+
+	//document.write("asdasd"+move);	
+	var f1 = $('#1');
+	//var elevator = $('.elevator');
+	var floors = $('.floor');
+	//elevator.attr('id','#f1');
+	//var elevator=$('.elevator');
+	var e1 = $('#11');
+	var e2 = $('#12');
+				
+	e1.offset({
+	top:f1.position().top+924.5});
+
+        e2.offset({top:f1.position().top+924.5});
+	
+	e1.animate({top:20+(10-move)*60},5000);	
+
+}
+
+</script>
+</body>
+</html>
