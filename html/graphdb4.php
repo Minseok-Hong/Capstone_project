@@ -13,7 +13,7 @@
 
         while($row = mysql_fetch_array($result))
         {
-                $res = $row[0];
+                $res = $row[3];
         }
         echo $res;
 

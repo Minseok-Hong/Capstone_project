@@ -7,13 +7,13 @@
         mysql_connect($host, $user, $pw);
         mysql_select_db($dbName);
 
-        $sql = "select Current_Floor from getCurr";
+        $sql = "select data from graph_s1 where id = 1";
 
         $result = mysql_query($sql);
 
         while($row = mysql_fetch_array($result))
         {
-                $res = $row[4];
+                $res = $row[0];
         }
         echo $res;
 
