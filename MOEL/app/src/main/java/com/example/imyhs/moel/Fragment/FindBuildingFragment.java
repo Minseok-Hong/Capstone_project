@@ -208,6 +208,7 @@ public class FindBuildingFragment extends Fragment {
                 String id;
                 String floor;
                 String num;
+                String capacity;
 
                 while (count<jsonArray.length())
                 {
@@ -217,7 +218,8 @@ public class FindBuildingFragment extends Fragment {
                     id = object.getString("Building_Id");
                     floor = object.getString("Building_Floor");
                     num = object.getString("Elevator_Number");
-                    Building building = new Building(name, id, floor, num);
+                    capacity = object.getString("Elevator_Capacity");
+                    Building building = new Building(name, id, floor, num, capacity);
                     buildingList.add(building);
                     count++;
                 }
