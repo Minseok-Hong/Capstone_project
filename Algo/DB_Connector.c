@@ -93,6 +93,60 @@ int DBconector_floor(int id);
 int DBconector_ele_num(int id);
 int DBconector_flag();
 
+void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num);
+
+
+void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	//sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
+	sprintf( sql,"UPDATE getCurr SET people_num = %d where Elevator_Id = %d ;",people_num, Elevator_Id);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
 int DBconector_ele_num(int id){
 	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
 

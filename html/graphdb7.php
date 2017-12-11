@@ -7,7 +7,7 @@
         mysql_connect($host, $user, $pw);
         mysql_select_db($dbName);
 
-        $sql = "select Current_Floor from getCurr where Building_Id = 1 AND Elevator_id = 1";
+        $sql = "select Current_Floor from getCurr where Building_Id = 31 AND Elevator_id = 2";
 
         $result = mysql_query($sql);
 

@@ -145,7 +145,7 @@ int find_min_time(int numA, int numB);
 
 void print_F_list(F_list list);
 void print_elevator_info(Elevator **elevators, int num , int person_forecast_latency,int cumulative_user_number);
-void print_UI(Elevator **elevators, int num, int floor_num);
+void print_UI(int building_id, Elevator **elevators, int num, int floor_num);
 
 //////////////////////////////////////////////////////////////////////
 
@@ -309,7 +309,7 @@ void *simul_f(void *data){
  		}
 
  		system("clear");
- 		print_UI((&elevators),ele_num,max_floor );
+ 		print_UI(*(simul->input->req_elevator_id),(&elevators),ele_num,max_floor );
  		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);
 
        DB_Flag_updater(tmpUserId);
@@ -1079,7 +1079,7 @@ int find_min(int *arr, int n)
 
 
 
-void print_UI(Elevator **elevators, int num, int floor_num)
+void print_UI(int building_id, Elevator **elevators, int num, int floor_num)
 {
     int i, j;
     for (i = 0; i < floor_num; i++)
@@ -1096,7 +1096,8 @@ void print_UI(Elevator **elevators, int num, int floor_num)
         {
             if ( (*(elevators + sizeof(Elevator)*j ))->current_floor == floor_num - i)
             {
-            	DB_Elevator_updater(1, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
+            	DB_Elevator_updater(building_id, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
+                DB_People_Num_updater(building_id,j+1,(*(elevators + sizeof(Elevator)*j ))->current_people);
                 printf("|");
                 if ((*(elevators + sizeof(Elevator)*j ))->current_floor == (*(elevators + sizeof(Elevator)*j ))->next_dest)
                 {
@@ -1161,4 +1162,4 @@ void print_elevator_info(Elevator **elevators, int num , int person_forecast_lat
 
 
 
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////

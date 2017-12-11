@@ -5,3 +5,4 @@ void DB_Flag2_updater(char *userID);
 int DBconector_floor(int id);
 int DBconector_ele_num(int id);
 int DBconector_flag();
+void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num);

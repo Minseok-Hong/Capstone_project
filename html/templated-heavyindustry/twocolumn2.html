@@ -21,6 +21,16 @@
 			<link rel="stylesheet" href="css/style.css" />
 			<link rel="stylesheet" href="css/style-desktop.css" />
 		</noscript>
+	<style>
+/*
+	.select
+        {
+
+                display : inline;
+		
+        }
+*/
+	</style>
 	</head>
 	<body class="left-sidebar">
 		<!-- Header -->
@@ -55,33 +65,44 @@
 					
 					<!-- Main Content Area -->
 					<section>
-						<h2>Simulation</h2>
-					<p>입력하세용</p></section>
+						<h2 style="color:#bc3232; font-weight:bold;">Simulation</h2>
+					<!--<p>입력하세용</p>-->
+					Elevator<select id = "eledropdown" name = "Elevator Number">
+						<option value="">1</option>
+						<option value="">2</option>
+						<option value="">3</option>
+						<option value="">4</option>
+						<option value="">5</option>
+					</select>
+					Building<select id = "builddropdown"  name = "Building Floor">
+						<option value="">1</option>
+					</select>
+					
+					</section>
 				<!-- Content Area Ends Here -->
 
 			</div>
 			<!-- Page Content -->
-
 			<!-- Three Column Area -->
 			<div id="three-column" class="row">
 				
 				<div class="4u">
 					<section id="column1">
-						<h2>Elevator 1</h2>
+						<h2 style="color:#848484; font-weight:bold;">Elevator 1</h2>
 						<p>엘리베이터1.</p>
 					</section>
 				</div>				
 
 				<div class="4u">
 					<section id="column2">
-						<h2>Elevator 2</h2>
+						<h2 style="color:#848484; font-weight:bold;">Elevator 2</h2>
 						<p>엘리베이터2.</p>
 					</section>
 				</div>				
 
 				<div class="4u">
 					<section id="column3">
-						<h2>Graph</h2>
+						<h2 style="color:#848484; font-weight:bold;">Graph</h2>
 						<iframe src="http://52.79.39.200/graph_s1.html" width = "700" height="310"></iframe>
 						<span style="color:blue" text-align=center>Elevator1</span>
 						<span style="color:red" text-align=center>Elevator2</span>

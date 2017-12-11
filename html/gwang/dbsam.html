@@ -39,6 +39,14 @@
 	while($row = mysql_fetch_array($result1)){
 		$ele[]= $row['Elevator_Id'];
 	}
+	
+	$sql3 = "select People_num from getCurr where Building_Id = ($inputValue)";
+	$result3 = mysql_query($sql3);
+
+	while($row = mysql_fetch_array($result3))
+	{
+		$people_num[] = $row['People_num'];
+	}	
 
   for($count =1; $count <= $ele_Number; $count++)
   {
@@ -47,6 +55,7 @@
      echo '<script src="jquery-2.0.2.min.js"></script>';
      echo '<script src="script.js"></script>';
      echo '<div id= "'.$ele[$i].'" div class="tower">';
+     echo '<p style="color:white;" align="center">People = <span id = "people" style="color:white">'.$people_num[$i].'</span></p>';
 
   for($floor=1; $floor <= $ele_Floor; $floor++)
   {
@@ -57,11 +66,10 @@
   }
      $incre = $count + 10;
 
-     echo '<img id="'.$incre.'" class="elevator" src="elevator_main.jpg" alt="hell">';	echo '<p> Hello!</p>';
-	  
+     echo '<img id="'.$incre.'" class = "elevator"  src="elevator_main.jpg">';	
+  
      echo '</div> ';
-  }
-
+}
 ?>
 
 	<script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -122,11 +130,6 @@
 				e8.offset({top:f1.position().top+505+((floorN-mv[8])*60)});		
 				e9.offset({top:f1.position().top+505+((floorN-mv[9])*60)});		
 
-
-
-
-
-
 //		e2.offset({top:f1.position().top+1175});
 						//800 -7 290 - 1층, 230 2층1115		
 		//document.write(f1.position());
@@ -135,7 +138,6 @@
 				//엘리베이터 위치 맞추기
 				//+100 4층
 			});
-
 
 	</script>
 <div id = "name_feedback"></div>
