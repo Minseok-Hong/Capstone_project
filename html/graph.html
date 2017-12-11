@@ -37,13 +37,14 @@ var chart = new CanvasJS.Chart("chartContainer", {
 	},{
 		type: "line",
 		dataPoints: dps5
-	},{
+	},
+	/*{
 		type: "line",
 		dataPoints: dps6
 	},{
 		type: "line",
 		dataPoints: dps7
-	}]
+	}*/]
 });
 
 var xVal = 0;
@@ -52,8 +53,8 @@ var yVal2 = 1;
 var yVal3 = 1;
 var yVal4 = 1;
 var yVal5 = 1;
-var yVal6 = 1;
-var yVal7 = 1;
+//var yVal6 = 1;
+//var yVal7 = 1;
 
 var updateInterval = 2000;
 var dataLength = 7; // number of dataPoints visible at any point
@@ -68,16 +69,16 @@ var updateChart = function (count) {
 		$.post('/graphdb3.php',function(data){poll3(data);});
 		$.post('/graphdb4.php',function(data){poll4(data);});
 		$.post('/graphdb5.php',function(data){poll5(data);});
-		$.post('/graphdb6.php',function(data){poll6(data);});
-		$.post('/graphdb7.php',function(datA){poll7(data);});
+		//$.post('/graphdb6.php',function(data){poll6(data);});
+		//$.post('/graphdb7.php',function(datA){poll7(data);});
 
 		dps.push({x: xVal, y: yVal});
 		dps2.push({x: xVal, y: yVal2});
 		dps3.push({x: xVal, y: yVal3});
 		dps4.push({x: xVal, y: yVal4});
 		dps5.push({x: xVal, y: yVal5});
-		dps6.push({x: xVal, y: yVal6});
-		dps7.push({x: xVal, y: yVal7});
+		//dps6.push({x: xVal, y: yVal6});
+		//dps7.push({x: xVal, y: yVal7});
 
 		xVal++;
 	}
@@ -88,8 +89,8 @@ var updateChart = function (count) {
 		dps3.shift();
 		dps4.shift();
 		dps5.shift();
-		dps6.shift();
-		dps7.shift();
+		//dps6.shift();
+		//dps7.shift();
 	}
 
 	chart.render();
@@ -113,12 +114,13 @@ function poll4(value){
 function poll5(value){
 	yVal5 = parseInt(value);
 }
+/*
 function poll6(value){
 	yVal6 = parseInt(value);
 }
 function poll7(value){
 	yVal7 = parseInt(value);
-}
+}*/
 }
 </script>
 </head>

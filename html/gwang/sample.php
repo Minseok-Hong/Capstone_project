@@ -40,12 +40,21 @@
 		$current_floor[] = $row[ Current_Floor];
 	}
 	
+	$sql3 = "select People_num from getCurr where Building_Id=$response";
+	$result3 = mysql_query($sql3);
+	
+	while($row = mysql_fetch_array($result3))
+	{
+		$people_num[] = $row[ People_num];
+	}
+	
 	$merge = array_merge($current_floor, $Building_Floor);
 	$merge1 = array_merge($elevator_number, $merge);
+	$merge2 = array_merge($merge1, $people_num);
 //	for($i=0;$i<2;$i++)
 //	{
 	//echo json_encode($Building_Floor);
-	echo json_encode($merge1);
+	echo json_encode($merge2);
 //	}
 //	echo json_encode($current_floor);
 ?>

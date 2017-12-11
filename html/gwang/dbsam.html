@@ -40,22 +40,16 @@
 		$ele[]= $row['Elevator_Id'];
 	}
 	
-	$sql3 = "select People_num from getCurr where Building_Id = ($inputValue)";
-	$result3 = mysql_query($sql3);
-
-	while($row = mysql_fetch_array($result3))
-	{
-		$people_num[] = $row['People_num'];
-	}	
 
   for($count =1; $count <= $ele_Number; $count++)
   {
      $i = $count -1;
+     $k = $count +30;
      echo '<link rel="stylesheet" type="text/css" href="style.css">';
      echo '<script src="jquery-2.0.2.min.js"></script>';
      echo '<script src="script.js"></script>';
      echo '<div id= "'.$ele[$i].'" div class="tower">';
-     echo '<p style="color:white;" align="center">People = <span id = "people" style="color:white">'.$people_num[$i].'</span></p>';
+     echo '<p style="color:white;" align="center">People = <span id = "'.$k.'" value="" style="color:white"></span></p>';
 
   for($floor=1; $floor <= $ele_Floor; $floor++)
   {
@@ -72,7 +66,7 @@
 }
 ?>
 
-	<script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+<script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 
 	<script>
 		(function() {
@@ -112,11 +106,23 @@
 				var e7 = $('#17');
 				var e8 = $('#18');
 				var e9 = $('#19');
-				
+				var p1 = $('#31');
+				var p2 = $('#32');
+				var p3 = $('#33');
+				var p4 = $('#34');
+				var p5 = $('#35');	
 				var eleNum = mv[0];
 				var floor = parseInt(eleNum)+1;
 				var floorN = mv[floor];
-				//받아온 아이디대로 엘리베이터에 아이디 부여
+				var pn = (parseInt(eleNum))*2;
+				
+				p1.text(mv[pn+1]);
+				p2.text(mv[pn+2]);
+				p3.text(mv[pn+3]);
+				p4.text(mv[pn+4]);
+				p5.text(mv[pn+5]);
+				
+			//받아온 아이디대로 엘리베이터에 아이디 부여
 				//문열고 닫기
 			//	document.write(f1.position().top);
 				e1.offset({top:f1.position().top+505+((floorN-mv[1])*60)});

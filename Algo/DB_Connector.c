@@ -133,7 +133,7 @@ void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num){
 
 	char sql[100] = "";
 	//sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
-	sprintf( sql,"UPDATE getCurr SET people_num = %d where Elevator_Id = %d ;",people_num, Elevator_Id);
+	sprintf( sql,"UPDATE getCurr SET People_num = %d where Elevator_Id = %d AND Building_Id = %d ;",people_num, Elevator_Id, building_id);
 
   	if(mysql_query(conn,sql))
   	{
