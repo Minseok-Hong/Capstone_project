@@ -10,12 +10,22 @@ public class Building {
     String id;
     String floor;
     String num;
+    String capacity;
 
-    public Building(String name, String id, String floor, String num) {
+    public Building(String name, String id, String floor, String num, String capacity) {
         this.name = name;
         this.id = id;
         this.floor = floor;
         this.num = num;
+        this.capacity = capacity;
+    }
+
+    public String getCapacity() {
+        return capacity;
+    }
+
+    public void setCapacity(String capacity) {
+        this.capacity = capacity;
     }
 
     public String getName() {

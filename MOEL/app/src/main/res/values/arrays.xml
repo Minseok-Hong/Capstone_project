@@ -1,9 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string-array name="major">
-        <item>소프트웨어학과</item>
-        <item>미디어학과</item>
-        <item>전자과</item>
-        <item>사이버보안학과</item>
+        <item>Software</item>
+        <item>CiberSecurity</item>
+        <item>Media</item>
+        <item>Military</item>
+    </string-array>
+
+    <string-array name="building">
+        <item>팔달관</item>
+        <item>성호관</item>
+        <item>원천관</item>
+        <item>아주대병원</item>
     </string-array>
 </resources>

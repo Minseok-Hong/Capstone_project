@@ -63,5 +63,15 @@
             android:text="NumElevator"
             android:textColor="@color/colorPrimaryDark"/>
 
+        <TextView
+            android:id="@+id/ElevatorCapacity"
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:layout_marginLeft="8dp"
+            android:padding="3dp"
+            android:text="ElevatorCapacity"
+            android:textColor="@color/colorPrimaryDark"/>
+
     </LinearLayout>
 </LinearLayout>

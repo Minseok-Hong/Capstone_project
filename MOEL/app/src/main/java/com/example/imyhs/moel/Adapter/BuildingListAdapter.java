@@ -57,11 +57,13 @@ public class BuildingListAdapter extends BaseAdapter {
         TextView idText = (TextView) v.findViewById(R.id.BuildingID);
         TextView floorText = (TextView) v.findViewById(R.id.floor);
         TextView numElevatorText = (TextView) v.findViewById(R.id.NumElevator);
+        TextView ElevatorCapacityText = (TextView) v.findViewById(R.id.ElevatorCapacity);
 
         nameText.setText("건물 이름 : " + buildingList.get(i).getName());
         idText.setText("건물 ID : " + buildingList.get(i).getid());
         floorText.setText(buildingList.get(i).getFloor() +"층");
         numElevatorText.setText(buildingList.get(i).getNum() +"대");
+        ElevatorCapacityText.setText("최대 수용 인원: " + buildingList.get(i).getCapacity() +"명");
 
 
         v.setTag(buildingList.get(i).getName());
