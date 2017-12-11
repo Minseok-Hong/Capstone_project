@@ -61,23 +61,10 @@
         <script>//드롭다운 리스트가 변경되면 일어나는 스크립트
             $(document).ready(function(){
             $('#myDropDown').change(function(){
-                //Selected value
                 var inputValue = $(this).val();
-                //alert("value in js "+inputValue);
-		//document.write(inputValue);
-                document.getElementById('ele_id').innerHTML = inputValue;
-		//Ajax for calling php function
-		//inputValue.style.display ='none';		
-//		setInterval
-		setInterval($.post('/gwang/4.html', { inputValue: inputValue }, function(data){
-                    //alert('ajax completed. Response:  '+data);
-                    //do after submission operation in DOM
-		    //var result = $('.result').html(data);
+		$.post('/gwang/4.html', { inputValue: inputValue }, function(data){
 		$('#name_feedback').html(data);
-		    //ele_id = $('#ele_id');
-//		document.getElementById('name_feedback').innerHTML = inputValue;							
-		}),5);
-		
+		});
             });
         });
 

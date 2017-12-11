@@ -21,7 +21,7 @@ body{
   font-size: 1.3em;
   font-weight:bold;
   cursor: default;
-  position: relative;
+  position: absolute;
   text-align: right;
   padding-right: 10px;
 }
@@ -33,9 +33,18 @@ body{
   font-size: 0.7em;
   font-weight:bold;
   cursor: default;
-  position: absolute;
+  position: relative;
 }
-
+.elevator .content{
+	position : absolute;
+	top:50%;
+	left:50%;
+	transform:translate(-50%,-50%);
+	font-size:5rem;
+	color : black;
+	z-index:2;
+	text-align: center;
+}
 #leftDoor{
   width: 25px;
   height: 50px;

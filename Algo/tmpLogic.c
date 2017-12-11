@@ -19,6 +19,7 @@
 #define MAX_PEOPLE 15 // 엘리베이터 정원
 #define MAX_TOTAL 150 // 점검 받아야하는 수
 
+int Time_InterNal = 1000000;
 /* 요청 구조체 */
 typedef struct _REQUEST
 {
@@ -98,15 +99,14 @@ typedef struct _DATABASE
 int building_pid[MAX_BUILDING];
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 Elevator *LOOK(Elevator **elevators, int num, Request *current, char **userID, int *person_forecast_latency);
-Elevator *C_SCAN(Elevator **elevators, int num, Request *current);
-Elevator *cluster(Elevator **elevators, int num, Request *current);
 
-F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
-F_node *C_SCAN_up_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
-F_node *cluster_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
+F_node *In_Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
+F_node *Out_Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target, F_node *tmp_start);
 
-F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target);
-F_node *find_direction_change_location(F_node *current, int current_direction);
+F_node *find_scheduled_in_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target);
+F_node *find_scheduled_out_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target);
+F_node *find_start_direction_change_location(F_node *current, int current_direction);
+F_node *find_end_direction_change_location(F_node *current, int current_direction);
 
 void *simul_f(void *data);
 void *input_f(void *data);
@@ -130,7 +130,7 @@ void get_request(Input *input, int elevator_id, int current_floor, int dest_floo
 
 void insert_into_queue(int current_floor, int dest_floor, int num_people, int max_floor);
 
-void F_list_insert(F_list list, F_node *after, int floor, int people);
+F_node *F_list_insert(F_list list, F_node *after, int floor, int people);
 int F_list_size(F_list list);
 void F_list_remove(F_list list);
 F_node *F_list_peek(F_list list);
@@ -274,7 +274,7 @@ void *simul_f(void *data){
    	}
 
    	res = mysql_use_result(conn);
-  	printf("MYSQL Tables in mysql database : ");
+  	//printf("MYSQL Tables in mysql database : ");
   	while((row = mysql_fetch_row(res)) != NULL){
 
   		//printf("%s \n",row[0]);
@@ -283,19 +283,17 @@ void *simul_f(void *data){
 
     	usleep(10000);
 
-    	if(mysql_query(conn,"SELECT * FROM Calling where Flag = '0'"))
-  		{
+    	if(mysql_query(conn,"SELECT * FROM Calling where Flag = '0'")){
   		        //return 1;
   		}
 
 	  	res = mysql_use_result(conn);
 
 	   	while((row = mysql_fetch_row(res)) != NULL){
+	   		printf("Elevator_num | Building_Floor | Test_Num | Start_time | Finish_time | Uprate |\n");
 			printf("%s %s %s %s %s %s %s \n",row[0],row[1],row[2],row[3],row[4],row[5],row[6]);
 			if(atoi(row[6]) == 0){
-				printf("This Flag is ZERO!!!!!!!!!!!!!!!!!\n");
 				*simul->input->mode = CALL;
-				//printf("*simul->input->mode : %s\n", simul->input->mode);
 			}
 
 			if (*simul->input->mode == CALL)
@@ -307,15 +305,11 @@ void *simul_f(void *data){
 		}
 
 		if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
-
-			//return 0;
 			continue;
-
  		}
 
  		system("clear");
  		print_UI((&elevators),ele_num,max_floor );
-
  		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);
 
        DB_Flag_updater(tmpUserId);
@@ -327,24 +321,20 @@ void *simul_f(void *data){
 
             current = *R_list_remove(reqs);
             response = LOOK((simul->elevators),ele_num, &current, &tmpUserId, &person_forecast_latency);
-            printf("#1_LOOK\n");
             // 요청에 응답하는 엘리베이터에 정보 추가하기
             // 사람 태울 층 추가하기
-            location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.start_floor);
-            printf("#2_LOOK\n");
-            F_list_insert(response->pending, location, current.start_floor, current.num_people);
+            location = In_Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.start_floor);
+            F_node *tmp_F_node = F_list_insert(response->pending, location, current.start_floor, current.num_people);
+
             // 사람 내릴 층 추가하기
-            printf("#3_LOOK\n");
-            location = Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor);
+            location = Out_Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.dest_floor, tmp_F_node);
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
 
         }
         // 엘리베이터 이동시키기
 
         move_elevator(simul->elevators, ele_num, max_floor);
-
-        printf("sleep\n\n");
-        sleep(1);
+        usleep(Time_InterNal);
 
     }
 }
@@ -357,17 +347,15 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current, char **userID, i
 	int size =num;
 	int min = 100000;
 
-	printf("#1 Look start\n");
+
 	ideal = (F_node **)malloc(sizeof(F_node *) * size);
  	time_required = (int *)malloc(sizeof(int) * size);
 
-
- 	printf("#2 Look start\n");
  	for(int i = 0 ; i < num;i++){
 
- 		ideal[i] = Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
+ 		ideal[i] = In_Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
-  		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
+  		//printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
   		min = find_min_time(min,time_required[i]);
 
  	}
@@ -404,24 +392,27 @@ void get_request(Input *input, int elevator_id, int current_floor, int dest_floo
     }
 }
 
-F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
+
+F_node *In_Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
 {
+	
 	int elevator_direction = 0;
 	int call_direction = 0;
 
     F_list list = (*elevator)->pending;
     F_node *start = list.head->next;
     F_node *end;
-
+    
     if (F_list_size(list) == 0)
     {
         return start;
     }//현재 이동할 노드가 없다면
-
+    
     elevator_direction = start->floor - (*elevator)->current_floor;
+
     if(elevator_direction == 0)// 만약 제자리에 가만히 있는 엘리베이터라면
     {
-        if(F_list_size(list) == 1)
+    	 if(F_list_size(list) == 1)
         {
             return start->next;
         }
@@ -430,7 +421,7 @@ F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_
             elevator_direction = start->next->floor - start->floor;
         }
     }
-
+    
     call_direction = dest_floor - start_floor;
 
     if (call_direction > 0)// 요청이 올라가려는 요청이라면
@@ -439,27 +430,29 @@ F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_
         {
             if (target >= (*elevator)->current_floor)//만약 올라가는 방향인데 내 경로에 요청이 같다면
             {
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+            	//printf("IF\n");
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_in_place(start, end, start_floor, dest_floor, target);
             }
             else
             {
+            	//printf("ELSE\n");
                 // 다음 방향 같아질 때 까지 찾아야 함!
-                start = find_direction_change_location(start, elevator_direction);
+                start = find_start_direction_change_location(start, elevator_direction);
                 elevator_direction *= -1;
-                start = find_direction_change_location(start, elevator_direction);
+                start = find_start_direction_change_location(start, elevator_direction);
                 elevator_direction *= -1;
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_in_place(start, end, start_floor, dest_floor, target);
             }
         }
         else
         {
             // 다음 방향 바뀔 때 까지 찾아야 함!
-            start = find_direction_change_location(start, elevator_direction);
+            start = find_start_direction_change_location(start, elevator_direction);
             elevator_direction *= -1;
-            end = find_direction_change_location(start, elevator_direction);
-            return find_scheduled_place(start, end, start_floor, dest_floor, target);
+            end = find_end_direction_change_location(start, elevator_direction);
+            return find_scheduled_in_place(start, end, start_floor, dest_floor, target);
         }
     }
     else
@@ -468,37 +461,136 @@ F_node *Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_
         {
             if (target <= (*elevator)->current_floor)
             {
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_in_place(start, end, start_floor, dest_floor, target);
             }
             else
             {
                 // 다음 방향 같아질 때 까지 찾아야 함!
-                start = find_direction_change_location(start, elevator_direction);
+                start = find_start_direction_change_location(start, elevator_direction);
                 elevator_direction *= -1;
-                start = find_direction_change_location(start, elevator_direction);
+                start = find_start_direction_change_location(start, elevator_direction);
                 elevator_direction *= -1;
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_in_place(start, end, start_floor, dest_floor, target);
             }
         }
         else
         {
             // 다음 방향 바뀔 때 까지 찾아야 함!
-            start = find_direction_change_location(start, elevator_direction);
+            start = find_start_direction_change_location(start, elevator_direction);
             elevator_direction *= -1;
-            end = find_direction_change_location(start, elevator_direction);
-            return find_scheduled_place(start, end, start_floor, dest_floor, target);
+            end = find_end_direction_change_location(start, elevator_direction);
+            return find_scheduled_in_place(start, end, start_floor, dest_floor, target);
         }
     }
 }
 
-F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target)
+F_node *Out_Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target, F_node *tmp_start)
+{
+	//printf("tmp_start : %d\n",tmp_start->floor);
+	int elevator_direction = 0;
+	int call_direction = 0;
+
+    F_list list = (*elevator)->pending;
+    //F_node *start = list.head->next;
+    F_node *start = tmp_start;
+    F_node *end;
+    
+    if (F_list_size(list) == 0)
+    {
+        return start;
+    }//현재 이동할 노드가 없다면
+    
+    elevator_direction = start->floor - (*elevator)->current_floor;
+
+    if(elevator_direction == 0)// 만약 제자리에 가만히 있는 엘리베이터라면
+    {
+    	 if(F_list_size(list) == 1){
+            return start->next;
+        }
+        else{
+            elevator_direction = start->next->floor - start->floor;
+        }
+    }
+    call_direction = dest_floor - start_floor;
+
+    if (call_direction > 0)// 요청이 올라가려는 요청이라면
+    {
+        if (elevator_direction > 0)// 현재 올라가고 있는 엘리베이터라면
+        {
+            if (target >= (*elevator)->current_floor)//만약 올라가는 방향인데 내 경로에 요청이 같다면
+            {
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_out_place(start, end, start_floor, dest_floor, target);
+            }
+            else
+            {
+                // 다음 방향 같아질 때 까지 찾아야 함!
+                start = find_start_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                start = find_start_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                start = tmp_start;
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_out_place(start, end, start_floor, dest_floor, target);
+            }
+        }
+        else
+        {
+            // 다음 방향 바뀔 때 까지 찾아야 함!
+            start = find_start_direction_change_location(start, elevator_direction);
+            elevator_direction *= -1;
+            start = tmp_start;
+            end = find_end_direction_change_location(start, elevator_direction);
+            return find_scheduled_out_place(start, end, start_floor, dest_floor, target);
+        }
+    }
+    else
+    {
+        if (elevator_direction < 0)
+        {
+            if (target <= (*elevator)->current_floor)
+            {
+            		start = tmp_start;
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_out_place(start, end, start_floor, dest_floor, target);
+            }
+            else
+            {
+                // 다음 방향 같아질 때 까지 찾아야 함!
+                start = find_start_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                start = find_start_direction_change_location(start, elevator_direction);
+                elevator_direction *= -1;
+                start = tmp_start;
+                end = find_end_direction_change_location(start, elevator_direction);
+                return find_scheduled_out_place(start, end, start_floor, dest_floor, target);
+            }
+        }
+        else
+        {
+            // 다음 방향 바뀔 때 까지 찾아야 함!
+            start = find_start_direction_change_location(start, elevator_direction);
+            //printf("START : %d\n",start->floor);
+            elevator_direction *= -1;
+            start = tmp_start;
+            end = find_end_direction_change_location(start, elevator_direction);
+            //printf("END : %d\n",end->floor);
+            return find_scheduled_out_place(start, end, start_floor, dest_floor, target);
+        }
+    }
+}
+
+
+
+F_node *find_scheduled_in_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target)
 {
     F_node *current = start;
     int call_direction = dest_floor - start_floor;
+    
+    
     if (call_direction > 0)//올라가는 방향이라면
-
     {
         while (1)
         {
@@ -531,129 +623,62 @@ F_node *find_scheduled_place(F_node *start, F_node *end, int start_floor, int de
             }
             if(target > current->floor)
             {
-                return current;
+
+            		return current;
             }
             current = current->next;
         }
     }
 }
 
-Elevator *C_SCAN(Elevator **elevators, int num, Request *current){
-
-	F_node **ideal;
-	int *time_required;
-	int ideal_index;
-	int size =num;
-
-	printf("#1 C_SCAN start\n");
-	ideal = (F_node **)malloc(sizeof(F_node *) * size);
- 	time_required = (int *)malloc(sizeof(int) * size);
-
- 	printf("#2 C_SCAN start\n");
- 	for(int i = 0 ; i < num;i++){
-
- 		ideal[i] = C_SCAN_up_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
-  		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
-  		printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
-
- 	}
-
- 	ideal_index = find_min(time_required, size);
-  	free(time_required);
-  	free(ideal);
-
-    printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
-    return *(elevators + sizeof(Elevator)*ideal_index);
-}
-
-F_node *C_SCAN_up_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target)
+F_node *find_scheduled_out_place(F_node *start, F_node *end, int start_floor, int dest_floor, int target)
 {
-	//일단은 올라가는 요청만 받는 알고리즘
-	int elevator_direction = 0;
-	int call_direction = 0;
-    F_list list = (*elevator)->pending;
-
-    F_node *start = list.head->next;
-    F_node *end;
-
-    if (F_list_size(list) == 0)
+    F_node *current = start;
+    //F_node *current = end;
+	//F_node *current = end->prev;
+    int call_direction = dest_floor - start_floor;
+    
+    
+    if (call_direction > 0)//올라가는 방향이라면
     {
-        return start;
-    }//현재 이동할 노드가 없다면
-    //printf("Look_find_ideal_location\n");
-    elevator_direction = start->floor - (*elevator)->current_floor;
-    if(elevator_direction == 0)// 만약 제자리에 가만히 있는 엘리베이터라면
-    {
-        if(F_list_size(list) == 1)
+        while (1)
         {
-            return start->next;
-        }
-        else
-        {
-            elevator_direction = start->next->floor - start->floor;
+
+            if(current->next == NULL)
+            {
+                return current;
+            }
+            /*
+            if(current == end->next)
+            {
+                return current;
+            }*/
+            if(target < current->floor)
+            {
+                return current;
+            }
+            current = current->next;
         }
     }
-
-    call_direction = dest_floor - start_floor;
-
-    if (call_direction > 0)// 요청이 올라가려는 요청이라면
+    else//내려가는 방향이라면
     {
-        if (elevator_direction > 0)// 현재 올라가고 있는 엘리베이터라면
+        while (1)
         {
-            if (target >= (*elevator)->current_floor)//만약 올라가는 방향인데 내 경로에 요청이 같다면
+            if(current->next == NULL)
             {
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+                return current;
             }
-            else
+            
+            if(current == end->next)
             {
-                // 다음 방향 같아질 때 까지 찾아야 함!
-                start = find_direction_change_location(start, elevator_direction);
-                elevator_direction *= -1;
-                start = find_direction_change_location(start, elevator_direction);
-                elevator_direction *= -1;
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
+                return current;
             }
+            if(target > current->floor)
+            {
+            		return current;
+            }
+            current = current->next;
         }
-        else
-        {
-            // 다음 방향 바뀔 때 까지 찾아야 함!
-            start = find_direction_change_location(start, elevator_direction);
-            elevator_direction *= -1;
-            end = find_direction_change_location(start, elevator_direction);
-            return find_scheduled_place(start, end, start_floor, dest_floor, target);
-        }
-    }
-    else
-    {
-    	/*
-        if (elevator_direction < 0)
-        {
-            if (target <= (*elevator)->current_floor)
-            {
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
-            }
-            else
-            {
-                // 다음 방향 같아질 때 까지 찾아야 함!
-                start = find_direction_change_location(start, elevator_direction);
-                elevator_direction *= -1;
-                start = find_direction_change_location(start, elevator_direction);
-                elevator_direction *= -1;
-                end = find_direction_change_location(start, elevator_direction);
-                return find_scheduled_place(start, end, start_floor, dest_floor, target);
-            }
-        }
-        else
-        {
-            // 다음 방향 바뀔 때 까지 찾아야 함!
-            start = find_direction_change_location(start, elevator_direction);
-            elevator_direction *= -1;
-            end = find_direction_change_location(start, elevator_direction);
-            return find_scheduled_place(start, end, start_floor, dest_floor, target);
-        }*/
     }
 }
 
@@ -817,9 +842,6 @@ int find_min_time(int numA, int numB){
 	}else{
 		return numA;
 	}
-
-
-
 }
 int find_time(F_list list, F_node *target, int start, int end)
 {
@@ -863,14 +885,12 @@ void insert_into_queue(int current_floor, int dest_floor, int num_people, int ma
     {
         return;
     }
-    //printf("insert_into_queue\n");
-    printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
+    
     if (current_floor > max_floor || current_floor < 1 || dest_floor > max_floor || dest_floor < 1)
     {
         return;
     }
-    printf("insert_into_queue\n");
-    printf("R_list_insert : %d %d %d \n", current_floor, dest_floor, num_people);
+
     R_list_insert(reqs, current_floor, dest_floor, num_people);
 
     flag = 0;
@@ -906,7 +926,7 @@ Request *R_list_remove(R_list list)
 
 void R_list_insert(R_list list, int current_floor, int dest_floor, int num_people)
 {
-	printf("R_list_insert(%d %d %d)\n", current_floor,dest_floor,num_people);
+	//printf("R_list_insert(%d %d %d)\n", current_floor,dest_floor,num_people);
     R_node *new_node = (R_node *)malloc(sizeof(R_node));
     new_node->next = list.tail;
     new_node->prev = new_node->next->prev;
@@ -917,7 +937,7 @@ void R_list_insert(R_list list, int current_floor, int dest_floor, int num_peopl
     new_node->req.num_people = num_people;
 }
 
-void F_list_insert(F_list list, F_node *after, int floor, int people)
+F_node *F_list_insert(F_list list, F_node *after, int floor, int people)
 {
     F_node *new_node = (F_node *)malloc(sizeof(F_node));
     new_node->next = after;
@@ -969,13 +989,16 @@ void print_F_list(F_list list)
     }
 }
 
-F_node *find_direction_change_location(F_node *current, int current_direction)
+
+F_node *find_start_direction_change_location(F_node *current, int current_direction)
 {
     int new_direction;
     F_node *target = current;
+    F_node *temp;
 
     while (1)
     {
+
         if(target->next == NULL)
         {
             return target;
@@ -986,8 +1009,46 @@ F_node *find_direction_change_location(F_node *current, int current_direction)
         }
 
         new_direction = target->next->floor - target->floor;
+        
         if(new_direction * current_direction < 0)
         {
+        	while(target->prev->floor == target->floor){
+				target = target->prev;        		
+        	}
+
+            return target;
+        }
+
+        target = target->next;
+    }
+}
+F_node *find_end_direction_change_location(F_node *current, int current_direction)
+{
+    int new_direction;
+    F_node *target = current;
+    F_node *temp;
+
+    while (1)
+    {
+
+        if(target->next == NULL)
+        {
+            return target;
+        }
+        else if(target->next->next == NULL)
+        {
+            return target->next;
+        }
+
+        new_direction = target->next->floor - target->floor;
+        
+        if(new_direction * current_direction < 0)
+        {
+
+        	while(target->prev->floor == target->floor){
+				target = target->prev;        		
+        	}
+
             return target;
         }
 

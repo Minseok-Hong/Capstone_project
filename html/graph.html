@@ -1,0 +1,105 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+window.onload = function () {
+
+var dps = []; // dataPoints
+var dps2 = [];
+var dps3 = [];
+var dps4 = [];
+var dps5 = [];
+
+var chart = new CanvasJS.Chart("chartContainer", {
+	title :{
+		text: ""
+	},
+	axisY:{
+		includeZero: false,
+		interval: 1 
+	},
+	data: [{
+		type: "line",
+		dataPoints: dps
+	},{
+		type: "line",
+		dataPoints: dps2
+	},{
+		type: "line",
+		dataPoints: dps3
+	},{
+		type: "line",
+		dataPoints: dps4
+	},{
+		type: "line",
+		dataPoints: dps5
+	}]
+});
+
+var xVal = 0;
+var yVal = 1; 
+var yVal2 = 1;
+var yVal3 = 1;
+var yVal4 = 1;
+var yVal5 = 1;
+var updateInterval = 2000;
+var dataLength = 7; // number of dataPoints visible at any point
+
+var updateChart = function (count) {
+
+	count = count || 1;
+
+	for (var j = 0; j < count; j++) {
+		$.post('/graphdb.php',function(data){poll(data);});
+		$.post('/graphdb2.php',function(data){poll2(data);});
+		$.post('/graphdb3.php',function(data){poll3(data);});
+		$.post('/graphdb4.php',function(data){poll4(data);});
+		$.post('/graphdb5.php',function(data){poll5(data);});
+
+		dps.push({x: xVal, y: yVal});
+		dps2.push({x: xVal, y: yVal2});
+		dps3.push({x: xVal, y: yVal3});
+		dps4.push({x: xVal, y: yVal4});
+		dps5.push({x: xVal, y: yVal5});
+		xVal++;
+	}
+
+	if (dps.length > dataLength) {
+		dps.shift();
+		dps2.shift();
+		dps3.shift();
+		dps4.shift();
+		dps5.shift();
+	}
+
+	chart.render();
+};
+
+updateChart(dataLength);
+setInterval(function(){updateChart()}, updateInterval);
+
+function poll(value){
+	yVal = parseInt(value);
+}
+function poll2(value){
+	yVal2 = parseInt(value);
+}
+function poll3(value){
+	yVal3 = parseInt(value);
+}
+function poll4(value){
+	yVal4 = parseInt(value);
+}
+function poll5(value){
+	yVal5 = parseInt(value);
+}
+}
+</script>
+</head>
+<body>
+<span id = "kkk"></span>
+<div id="chartContainer" style="height: 300px; width: 50%;"></div>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+</body>
+</html>

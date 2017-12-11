@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+   <meta charset="UTF-8">
+ <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+
+</head>
+
+<body>
+	<!--<p>Current_Floor = <span id="current" value=""></span></p>-->
+
+<?php
+        $inputValue = $_POST['inputValue'];
+
+        $host = 'localhost';
+        $user = 'root';
+        $pw = 'root';
+        $dbName = 'capstone';
+
+        mysql_connect($host, $user, $pw);
+        mysql_select_db($dbName);
+
+	
+	$sql2 = "update building set flag = 1 where Building_Id=($inputValue)";
+	mysql_query($sql2);
+	
+        $sql = "SELECT Building_Name, Building_Floor, Elevator_Number FROM building where Building_Id = ($inputValue)";
+        $result = mysql_query($sql);
+
+        while($row = MySQL_fetch_array($result)){
+
+        $ele_Name = $row[ Building_Name];
+        $ele_Floor = $row[ Building_Floor];
+        $ele_Number = $row[ Elevator_Number];
+
+	}
+	$sql1 = "select Elevator_Id from getCurr where Building_Id=($inputValue)";
+        $result1 = mysql_query($sql1);
+	while($row = mysql_fetch_array($result1)){
+		$ele[]= $row['Elevator_Id'];
+	}
+
+  for($count =1; $count <= $ele_Number; $count++)
+  {
+     $i = $count -1;
+     echo '<link rel="stylesheet" type="text/css" href="style.css">';
+     echo '<script src="jquery-2.0.2.min.js"></script>';
+     echo '<script src="script.js"></script>';
+     echo '<div id= "'.$ele[$i].'" div class="tower">';
+
+  for($floor=1; $floor <= $ele_Floor; $floor++)
+  {
+     $f = $floor +20;	
+     echo '<div id= "'.$f.'" class="floor">';
+     echo $ele_Floor-$floor+1;
+     echo '</div> ';
+  }
+     $incre = $count + 10;
+
+     echo '<img id="'.$incre.'" class="elevator" src="elevator_main.jpg" alt="hell">';	echo '<p> Hello!</p>';
+	  
+     echo '</div> ';
+  }
+
+?>
+
+	<script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+	<script>
+		(function() {
+			var poll = function(){
+	
+			$.ajax({
+				url:'/gwang/sample.php',
+				dataType: 'json',
+				type: 'get',
+				async:false,
+				success: function(data){
+					//$('#current').text(data[0]);
+			//	document.write(data);
+					tex(data);
+				},
+				error: function(data){
+				}
+				});
+			};
+			setInterval(function(){
+				poll();
+			},1000);
+			
+			}
+		)();
+
+			var tex = (function(mv){
+				
+				var t1 = $('#1');
+				var f1 = $('#21');
+				var e1 = $('#11');
+				var e2 = $('#12');
+				var e3 = $('#13');
+				var e4 = $('#14');
+				var e5 = $('#15');
+				var e6 = $('#16');
+				var e7 = $('#17');
+				var e8 = $('#18');
+				var e9 = $('#19');
+				
+				var eleNum = mv[0];
+				var floor = parseInt(eleNum)+1;
+				var floorN = mv[floor];
+				//받아온 아이디대로 엘리베이터에 아이디 부여
+				//문열고 닫기
+			//	document.write(f1.position().top);
+				e1.offset({top:f1.position().top+505+((floorN-mv[1])*60)});
+				e2.offset({top:f1.position().top+505+((floorN-mv[2])*60)});
+
+				e3.offset({top:f1.position().top+505+((floorN-mv[3])*60)});		
+				e4.offset({top:f1.position().top+505+((floorN-mv[4])*60)});		
+				e5.offset({top:f1.position().top+505+((floorN-mv[5])*60)});		
+				e6.offset({top:f1.position().top+505+((floorN-mv[6])*60)});		
+				e7.offset({top:f1.position().top+505+((floorN-mv[7])*60)});		
+				e8.offset({top:f1.position().top+505+((floorN-mv[8])*60)});		
+				e9.offset({top:f1.position().top+505+((floorN-mv[9])*60)});		
+
+
+
+
+
+
+//		e2.offset({top:f1.position().top+1175});
+						//800 -7 290 - 1층, 230 2층1115		
+		//document.write(f1.position());
+	//	e1.animate({top:f1.position().top+620-(60*mv[0])},1000);
+	//	e2.animate({top:f1.position().top+620-(mv[1]*60)},1000);
+				//엘리베이터 위치 맞추기
+				//+100 4층
+			});
+
+
+	</script>
+<div id = "name_feedback"></div>
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src ="jquery-2.0.2.min.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
+
