@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+   <meta charset="UTF-8">
+ <script src="https://code.jquery.com/jquery-1.10.2.js"></script>
+
+</head>
+
+<body>
+	 <p>Current_Floor = <span id="current" value=""></span></p>
+
+
+<script src = "http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+        <script>
+                (function() {
+                        var poll = function(){
+
+                        $.ajax({
+                                url:'/gwang/sample1.php',
+                                dataType: 'json',
+                                type: 'get',
+                                async:false,
+                                success: function(data){
+                                        $('#current').text(data[0]);
+                                },
+                                error: function(data){
+                                }
+                                });
+                        };
+                        setInterval(function(){
+                                poll();
+                        },1000);
+
+                        }
+                )();
+	</script>
+
+</body>
+</html>
+
+

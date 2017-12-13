@@ -1,0 +1,23 @@
+<html>
+<head>
+</head>
+<body>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+
+	$(document).ready(function(){
+	$.post('/graphdb.php',function(data){poll(data)});
+	
+	
+	function poll(value)
+	{
+		value = value +  Math.round(5 + Math.random() *(-5-5));
+		document.write(value);
+	}
+		
+	setInterval(poll();, 1000);
+
+</script>
+</body>
+
+</html>

@@ -15,8 +15,9 @@
 	$Elevator_Number = $_POST["Elevator_Number"];
         //$Elevator_Number = "1";
 	$Elevator_Capacity = $_POST["Elevator_Capacity"];
+	$FLAG = '0';
 
-        $mysql_qry = "insert into building(Building_Id,Building_Name,Building_Floor,Elevator_Number,Elevator_Capacity) values( '$Building_Id','$Building_Name','$Building_Floor','$Elevator_Number','$Elevator_Capacity')";
+        $mysql_qry = "insert into building(Building_Id,Building_Name,Building_Floor,Elevator_Number,Elevator_Capacity, flag) values( '$Building_Id','$Building_Name','$Building_Floor','$Elevator_Number','$Elevator_Capacity','$FLAG')";
 
         mysqli_query($conn,$mysql_qry);
 

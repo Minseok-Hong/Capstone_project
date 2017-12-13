@@ -1,0 +1,219 @@
+<!DOCTYPE HTML>
+<!--
+	HeavyIndustry by TEMPLATED
+    templated.co @templatedco
+    Released for free under the Creative Commons Attribution 3.0 license (templated.co/license)
+-->
+<html>
+	<head>
+		<title>MOEL by OverFlow</title>
+		<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+		<meta name="description" content="" />
+		<meta name="keywords" content="" />
+		<link href='http://fonts.googleapis.com/css?family=Oswald:400,300' rel='stylesheet' type='text/css'>
+		<!--[if lte IE 8]><script src="js/html5shiv.js"></script><![endif]-->
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+		<script src="js/skel.min.js"></script>
+		<script src="js/skel-panels.min.js"></script>
+		<script src="js/init.js"></script>
+		<noscript>
+			<link rel="stylesheet" href="css/skel-noscript.css" />
+			<link rel="stylesheet" href="css/style.css" />
+			<link rel="stylesheet" href="css/style-desktop.css" />
+		</noscript>
+ <style>
+ body{
+}
+
+.tower{
+  display: inline-block;
+  background-color: #133456;
+  left: 100px;
+  position: relative;
+}
+.floor {
+  width: 100px;
+  height: 50px;
+  background-color: #eaeaea;
+  margin:10px 10px 10px 10px;
+  font-size: 1.3em;
+  font-weight:bold;
+  cursor: default;
+  position: relative;
+  text-align: right;
+  padding-right: 10px;
+}
+.elevator {
+  width: 50px;
+  height: 50px;
+  background-color: #eaeaea;
+  margin: -10px 10px 10px 10px;
+  font-size: 0.7em;
+  font-weight:bold;
+  cursor: default;
+  position: absolute;
+}
+
+#leftDoor{
+  width: 25px;
+  height: 50px;
+  background-color: #eaeaea;
+  margin: -10px 10px 10px 10px;
+  font-size: 0.7em;
+  font-weight:bold;
+  cursor: default;
+  position: absolute;
+
+}
+#rightDoor{
+
+  width: 25px;
+  height: 50px;
+  background-color: #eaeaea;
+  margin: -10px 10px 10px 10px;
+  font-size: 0.7em;
+  font-weight:bold;
+  cursor: default;
+  position: absolute;
+}
+
+
+</style>
+
+	</head>
+	<body class="right-sidebar">
+		<!-- Header -->
+		<div id="header-wrapper">
+		
+			<div class="container">
+				<div id="header">
+					<div id="logo">
+						<h1><a href="#">MOEL</a></h1>
+						<span>by <a href="http://templated.co">OverFlow</a></span>
+					</div>
+					<nav id="nav">
+						<ul>
+							<li><a href="index.html">Homepage</a></li>
+							<li class="current_page_item"><a href="twocolumn1.html">ANDROID</a></li>
+							<li><a href="twocolumn2.html">SIMULATION</a></li>
+					
+						</ul>
+					</nav>
+				</div>
+			</div>
+			
+	</div>		
+<!--page Wrapper -->
+		<div id="wrapper" class="container">
+
+			<!-- Page Content -->
+			<div id="page" class="row">
+				
+				<!-- Content Area -->
+				<div id="content" class="12u">
+					
+					<!-- Main Content Area -->
+					<section>
+						<h2 style="color:#bc3232; font-weight:bold;">Android</h2>
+					<p><div style = "text-align:center"><span style = "font-size : medium; font-weight: bold; margin : 10px;">
+<?php
+        $host = 'localhost';
+        $user = 'root';
+        $pw = 'root';
+        $dbName = 'capstone';
+
+        mysql_connect($host, $user, $pw);
+        mysql_select_db($dbName);
+        $sql = "SELECT Building_Id, Building_Name FROM building";
+        $result = mysql_query($sql);
+        echo "<select id='myDropDown' name = 'myDropDown' align='absmiddle'>";
+        while ($row = mysql_fetch_array($result)) {
+                echo "<option value='" . $row['Building_Id'] . "'>" . $row['Building_Name'] . "</option>";
+        }
+        echo "</select>";
+
+?></span>
+
+<form method ="post" action="/gwang/inputvalue.php">
+
+<!--<a href="#" id= "btn" class="button" onclick="btn1_click();"><span>Click</span></a></p></div>
+-->		
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+		<script>
+			$(document).ready(function(){
+			$('#myDropDown').change(function(){
+				$.post('/gwang/inputvalue.php',function(data){$('#trans').html(data)});
+
+			});
+			});
+		</script>
+</form>
+
+<form method ="post" action="/gwang/dbsam.html">
+
+<!--<a href="#" id= "btn" class="button" onclick="btn1_click();"><span>Click</span></a></p></div>
+-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+
+                <script>
+                        $(document).ready(function(){
+                        $('#myDropDown').change(function(){
+                                var inputValue = $(this).val();
+                                $.post('/gwang/dbsam.html',{inputValue : inputValue},function(data){$('#feedback').html(data)});
+
+                        });
+                        });
+                </script>
+</form>
+
+
+				</section>
+	
+				</div>
+				<!-- Content Area Ends Here -->
+
+			</div>
+<hr color="cccccc">
+			<!-- Page Content -->
+		<div id="page" class="row">			
+			<!-- Content Area -->
+			<div id="content" class="8u skel-cell-important">					<!-- Main Content Area -->
+		<section>
+			<h2 style="color:#848484; font-weight:bold; fint-size:medium;">Elevator</h2>						<!--<p><a href="#"><img src="images/pics02.jpg" alt=""></a></p>-->			<div id="feedback"></div>
+		          <span id = "trans"></span>
+	</div>
+		<!-- Sidebar Area -->
+		<div id="sidebar" class="4u">
+			
+			<!-- Sidebar Section 2 -->
+			<section id="box1">
+			<h2 style="color:#313759; font-weight:bold;">Graph</h2>
+			
+<iframe src="http://52.79.39.200/graph.html" width = "700" height="310"></iframe>
+			<ul class="style2">
+			<li class="first">
+	<!--	<p>graph</p> -->
+		</li>
+
+					</ul>
+					</section>
+
+
+				</div>
+				
+			</div>
+			<!-- Page Content -->
+
+		</div>
+		<!-- Wrapper Ends Here -->
+		</div>
+
+		<!-- Copyright -->
+		<div id="copyright">
+			<div class="container">
+				아주대학교  <a href="http://software.ajou.ac.kr/"> 소프트웨어학과 </a> 홍민석,남화수,이광배,정은선 		</div>
+		</div>
+		
+</body>
+</html>

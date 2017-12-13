@@ -1,0 +1,77 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+<script>
+window.onload = function () {
+
+var dps = []; // dataPoints
+var dps2 = [];
+
+var chart = new CanvasJS.Chart("chartContainer", {
+	title :{
+		text: "Dynamic Data"
+	},
+	axisY: {
+		includeZero: false
+	},      
+	data: [{
+		type: "line",
+		dataPoints: dps
+	},{
+		type: "line",
+		dataPoints: dps2
+	}]
+});
+
+var xVal = 0;
+var yVal = 0 ; 
+var yVal2 = 0;
+var updateInterval = 2000;
+var dataLength = 7; // number of dataPoints visible at any point
+
+var updateChart = function (count) {
+
+	count = count || 1;
+
+	for (var j = 0; j < count; j++) {
+		$.post('/graphdb.php',function(data){poll(data);});
+		$.post('/graphdb2.php',function(data){poll2(data);});
+		dps.push({
+			x: xVal,
+			y: yVal
+		});
+		dps2.push({
+			x: xVal,
+			y: yVal2
+		});
+		xVal++;
+	}
+
+	if (dps.length > dataLength) {
+		dps.shift();
+		dps2.shift();
+	}
+
+	chart.render();
+};
+
+updateChart(dataLength);
+setInterval(function(){updateChart()}, updateInterval);
+
+function poll(value){
+	yVal = parseInt(value);
+}
+function poll2(value){
+	yVal2 = parseInt(value);
+}
+}
+
+</script>
+</head>
+<body>
+<span id = "kkk"></span>
+<div id="chartContainer" style="height: 50%; width:300px;"></div>
+<script src="https://canvasjs.com/assets/script/canvasjs.min.js"></script>
+</body>
+</html>
