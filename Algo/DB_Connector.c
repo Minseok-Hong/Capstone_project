@@ -85,6 +85,7 @@ typedef struct _DATABASE
 
 } Database;
 
+void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num);
 void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor);
 void DB_Calling_updater(char *userID, int Time, int elevator_id);
 void DB_Flag_updater(char *userID);
@@ -92,60 +93,6 @@ void DB_Flag2_updater(char *userID);
 int DBconector_floor(int id);
 int DBconector_ele_num(int id);
 int DBconector_flag();
-
-void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num);
-
-
-void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num){
-
-	MYSQL *conn;
- 	MYSQL_RES *res;
- 	MYSQL_ROW row;
-
- 	char *server = "localhost";
- 	char *user = "root";
- 	char *password = "root";
- 	char *database = "capstone";
-
- 	int tmp;
-
- 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
- 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
- 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
-
-	conn = mysql_init(NULL);
-
- 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
- 		exit(1);
-  	}
-
-  	 if(mysql_query(conn,"show tables")){
-
-   		exit(1);
-   	}
-
-	res = mysql_use_result(conn);
-  	////printf("MYSQL Tables in mysql database : ");
-  	while((row = mysql_fetch_row(res)) != NULL){
-		//printf("%s ",row[0]);
-  	}
-
-
-	char sql[100] = "";
-	//sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
-	sprintf( sql,"UPDATE getCurr SET People_num = %d where Elevator_Id = %d AND Building_Id = %d ;",people_num, Elevator_Id, building_id);
-
-  	if(mysql_query(conn,sql))
-  	{
-  		//printf("###UPDATA ERROR!!!!!!!\n");
-  		//return 1;
-  	}
-  	//printf("########%s\n",sql);
-
-   mysql_free_result(res);
-   mysql_close(conn);
-
-}
 
 int DBconector_ele_num(int id){
 	//나중에 사용할껀데 일단은 로컬에서 테스트 할꺼니깐 주석처리
@@ -240,6 +187,57 @@ void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor){
 	char sql[100] = "";
 	//sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
 	sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d ;",current_floor, Elevator_Id);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
+void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	//sprintf( sql,"UPDATE getCurr SET Current_Floor = %d where Elevator_Id = %d AND Building_Id = %d;",current_floor, Elevator_Id, building_id);
+	sprintf( sql,"UPDATE getCurr SET People_num = %d where Elevator_Id = %d ANC building_id = %d ;",people_num, Elevator_Id,building_id);
 
   	if(mysql_query(conn,sql))
   	{
@@ -460,6 +458,7 @@ int DBconector_floor(int id){
 
    return tmp;
 }
+
 int DBconector_flag(){
 
 	MYSQL *conn;
@@ -513,4 +512,273 @@ int DBconector_flag(){
    mysql_close(conn);
 
    return tmp;
+}
+
+int DBconector_Simul_flag(int Simul_ID){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+  		printf("%s ",row[0]);
+  	}
+  		
+  	char query[100] ="";
+  	sprintf(query,"SELECT Flag FROM SimulMode WHERE Simul_Id = %d",Simul_ID);
+
+  	if(mysql_query(conn,query))
+  	{
+  	        return 1;
+  	}
+
+  	res = mysql_use_result(conn);
+
+   	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+		tmp = atoi(row[0]);
+	}
+
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+   return tmp;
+}
+
+
+int DBconector_Simul_Mode(int Simul_ID){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+  		printf("%s ",row[0]);
+  	}
+  		
+  	char query[100] ="";
+  	sprintf(query,"SELECT Mode FROM SimulMode WHERE Simul_Id = %d",Simul_ID);
+
+  	if(mysql_query(conn,query))
+  	{
+  	        return 1;
+  	}
+
+  	res = mysql_use_result(conn);
+
+   	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+		tmp = atoi(row[0]);
+	}
+
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+   return tmp;
+}
+
+
+void DBconector_Simul_Result(int Simul_ID, int Forecast_Latency , int Real_Latency , int User_Num , int Throughput ,float Avg_Forecast_Latency , float Avg_Real_Latency , float Accuration_Latency ){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+  		printf("%s ",row[0]);
+  	}
+  	
+  	char query[1000] ="";
+  	//sprintf(query,"SELECT Mode FROM SimulMode WHERE Simul_Id = %d",Simul_ID);
+	sprintf( query,"UPDATE Simul_Result SET Forecast_Latency = %d, Real_Latency = %d,  User_Num = %d, Throughput = %d, Avg_Forecast_Latency = %f, Avg_Real_Latency = %f, Accuration_Latency = %f where Simul_Id = %d",Forecast_Latency, Real_Latency, User_Num, Throughput, Avg_Forecast_Latency, Avg_Real_Latency, Accuration_Latency, Simul_ID);
+
+  	if(mysql_query(conn,query))
+  	{
+  	        //return 1;
+  	}
+/*
+  	res = mysql_use_result(conn);
+
+   	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+		tmp = atoi(row[0]);
+	}
+*/
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+void DB_Simul_Current(int Simul_ID, int ele_id, int current_floor){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"UPDATE Simul_getCurr SET Current_Floor = %d where Simul_ID = %d AND Elevator_Id = %d;",current_floor,Simul_ID,ele_id);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
+void DB_Simul_People(int Simul_ID, int ele_id, int People_Num){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"UPDATE Simul_getCurr SET People_Num = %d where Simul_ID = %d AND Elevator_Id = %d;",People_Num,Simul_ID,ele_id);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
 }

@@ -6,3 +6,8 @@ int DBconector_floor(int id);
 int DBconector_ele_num(int id);
 int DBconector_flag();
 void DB_People_Num_updater(int building_id, int Elevator_Id, int people_num);
+int DBconector_Simul_flag(int Simul_ID);
+int DBconector_Simul_Mode(int Simul_ID);
+void DBconector_Simul_Result(int Simul_ID, int Forecast_Latency , int Real_Latency , int User_Num , int Throughput ,float Avg_Forecast_Latency , float Avg_Real_Latency , float Accuration_Latency );
+void DB_Simul_Current(int Simul_ID, int ele_id, int current_floor);
+void DB_Simul_People(int Simul_ID, int ele_id, int People_Num);

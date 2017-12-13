@@ -40,11 +40,10 @@ int upRate;
 int oneRate;
 	
 int start_time, current_floor, go_Floor, re_start_time, re_go_Floor; 
-char result[100] ="";
+
 	
 Test_struct test[MAX];
 
-FILE *f;
 int upNum; 
 int oneNum;
 
@@ -53,7 +52,9 @@ void makeOnlyOneTest();
 
 int main(int argc, char **argv)
 {
-
+	char *result = malloc(sizeof(char)*10);
+	
+	FILE *f;
 	inputNum = argc -1;
 	testCase = atoi(argv[1]); //-ASCII;
 	timeInterval = atoi(argv[2]);
@@ -83,8 +84,10 @@ int main(int argc, char **argv)
 	qsort(test, testCase, sizeof(Test_struct), compare_with_size);
 
 	for(int i = 0 ;i < testCase ; i++){
-		sprintf(result,"%d %d %d\n",test[i].start_time, test[i].current_floor, test[i].go_Floor );
-		fprintf(f,"%s",result);
+		sprintf(result,"%d %d %d",test[i].start_time, test[i].current_floor, test[i].go_Floor );
+		printf("%s\n",result);
+		//fprintf(f,"%s\n",result);
+		fputs(result,f);
 	}
 	fclose(f);
 

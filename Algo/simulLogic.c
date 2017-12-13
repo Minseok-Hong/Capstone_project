@@ -6,6 +6,7 @@
 #include <termios.h>
 #include <limits.h>
 #include <math.h>
+#include <time.h>
 #include <arpa/inet.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -14,12 +15,24 @@
 
 #define CALL 'A'
 
+#define ASCII 48
+#define MAX 100000
+
 #define BUFF_SIZE   1024
 #define MAX_BUILDING 2 //서버에서 가동할 수 있는 최대 빌딩의 수
 #define MAX_PEOPLE 15 // 엘리베이터 정원
 #define MAX_TOTAL 150 // 점검 받아야하는 수
 
-int Time_InterNal =10000;
+//=1;
+int Time_InterNal =1000000;
+
+typedef struct _TESTCASE
+{
+	int start_time;
+	int current_floor;
+	int go_Floor;
+
+} Test_struct;
 
 /* 요청 구조체 */
 typedef struct _REQUEST
@@ -84,6 +97,7 @@ typedef struct _SIMUL
 {
     Elevator **elevators;
     Input *input;
+    int Simul_name;
 } Simul; // 시뮬레이션 구조체
 
 typedef struct _DATABASE
@@ -106,6 +120,7 @@ Elevator *High_Low(Elevator **elevators, int num, Request *current, int *person_
 Elevator *Even_Odd(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int floor);
 Elevator *C_SCAN(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int uprate);
 Elevator *C_SCAN_LOOK(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int uprate);
+Elevator *All_Scheduling(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int floor, int uprate, char *mode);
 
 F_node *In_Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
 //F_node *Out_Look_find_ideal_location(Elevator **elevator, int start_floor, int dest_floor, int target);
@@ -119,7 +134,7 @@ void *simul_f(void *data);
 void *input_f(void *data);
 void *db_f(void *data);
 
-void move_elevator(Elevator **elevators, int num, int max_floor);
+void move_elevator(Elevator **elevators, int num, int max_floor, int *Throughput);
 //void socket_server();
 
 void init_input(Input **input);
@@ -128,15 +143,14 @@ void init_elevator(Elevator **elevators, int num);
 void init_elevator_High_low(Elevator **elevators, int num, int floor);
 
 void get_request(Input *input, int elevator_id, int current_floor, int dest_floor, int people_num, int *cumulative_user_number);
-
 void insert_into_queue(int current_floor, int dest_floor, int num_people, int max_floor);
-
 int makeUpNum(int num, int uprate);
+char *inputFilter(int start_floor, int dest_floor, int floor);
 
 //void F_list_insert(F_list list, F_node *after, int floor, int people);
 F_node *F_list_insert(F_list list, F_node *after, int floor, int people);
 int F_list_size(F_list list);
-void F_list_remove(F_list list);
+F_node *F_list_remove(F_list list);
 F_node *F_list_peek(F_list list);
 
 Request *R_list_remove(R_list list);
@@ -149,14 +163,33 @@ int find_min_time(int numA, int numB);
 void calculate_real_time(F_list list, int *person_real_latency);
 
 void print_F_list(F_list list);
-void print_elevator_info(Elevator **elevators, int num , int person_forecast_latency,int cumulative_user_number, int *person_real_latency);
-void print_UI(Elevator **elevators, int num, int floor_num);
+void print_elevator_info(Elevator **elevators, int num , int person_forecast_latency, int cumulative_user_number, int *person_real_latency, int Throughput, int Simul_Id);
+void print_UI(Elevator **elevators, int num, int floor_num, int Simul_Id);
+
+int compare_with_size(const void *a, const void  *b);
+void makeOnlyOneTest();
+void makeTest();
 
 //////////////////////////////////////////////////////////////////////
 
 R_list reqs;
 int flag = 0;
-int Algo_mode;
+
+
+int inputNum;
+int testCase; //-ASCII;
+int timeInterval;
+int Building_Floor;
+int upRate;
+int oneRate;
+int upNum; 
+int oneNum;	
+int start_time, current_floor, go_Floor, re_start_time, re_go_Floor; 
+int Elevator_num, Building_Floor, Test_Num, Start_time, Finish_time, Uprate, OneRate;
+
+Test_struct test[MAX];
+//test = (Test_struct *)malloc(sizeof(Test_struct));
+
 ///////////////////////////////////////////////////////////////////////
 int main()
 {
@@ -188,77 +221,18 @@ int main()
 		}
 		usleep(Time_InterNal);
 	}
+	
+	
 
-	for(int i =  1; i <= 1; i++){
-  	//현재 등록된 건물의 수만큼 thread를 생성한다.
-		Simul *simul;
-
-		init_simul(&input, &simul);
-  		tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
-
-  		printf("아이디가 %d인 건물의 엘리베이터가 생성되었습니다.\n",i);
-  		if (tid_simul != 0){
-     		perror("thread creation error: ");
-     		exit(0);
-   		}
-
-   		building_pid[i] = (int)simul_thr;
-   		printf("building_pid[i] : %d\n",building_pid[i]);
-   		printf("i : %d \n" ,i);
-	}
-
-
-  	for(int i = 0 ; i < MAX_BUILDING;i++){
-
-		pthread_join(simul_thr, NULL);
-	}
-
-	pthread_join(input_thr, NULL);
-	pthread_join(db_thr, NULL);
-
-
-    return 0;
-}
-
-void *input_f(void *data){
-
-	Input *input = (Input *)data;
 	while(1){
-		if (*input->mode == CALL){
+
+		if(DBconector_Simul_flag(1)==1){
+			break;
 		}
-		else{
-			scanf(" %c", input->mode);
-		}
+		usleep(Time_InterNal);
 	}
-}
 
-void *simul_f(void *data){
-
-	pthread_t id;
-    // 현재 쓰레드의 id 를 얻어서 출력합니다
-	id = pthread_self();
-	int max_floor;
-	int ele_num;
-	int i;
-	int Elevator_num, Building_Floor, Test_Num, Start_time, Finish_time, Uprate, OneRate;
-	int tmp_start_time, tmp_current_floor, tmp_go_floor;
-	long pointer_location;
-	int timeCheck =0;
-
-	FILE *f;
-
-	Simul *simul = (Simul *)data;
-	Elevator *elevators;
-	Elevator *response; // 요청에 응답하는 엘리베이터
-	F_node *location;   // 요청이 들어가는 위치
-	Request current;    // 처리할 요청
-
-	int person_forecast_latency =0;//현재까지 누적된 예측 평균 대기시간
-	int cumulative_user_number =0;//누적 이용 사람 숫자
-	int person_real_latency =0;//실제 개인이 기다린 대기시간
-	int moved_people_number =0;  //현재까지 이동시킨 누적 사람수
-   
-   MYSQL *conn;
+	MYSQL *conn;
  	MYSQL_RES *res;
  	MYSQL_ROW row;
 
@@ -303,19 +277,147 @@ void *simul_f(void *data){
 
 		Elevator_num = atoi(row[0]);
 		Building_Floor =atoi(row[1]);
-		Test_Num = atoi(row[2]);
+		testCase = atoi(row[2]);
 		Start_time = atoi(row[3]);
 		Finish_time = atoi(row[4]);
-		Uprate = atoi(row[5]);
-		OneRate = atoi(row[6]);
+		upRate = atoi(row[5]);
+		oneRate = atoi(row[6]);
 		printf("\n----------------------------------------------\n");
 	}
-	char inputMaker[100] ="";
+	
+	timeInterval = (Finish_time-Start_time)*60;
+	srand(time(NULL));
+	//printf("timeInterval : %d\n",timeInterval);
+	//exit(0);
+	if(upRate == 0){
+		upNum = 0;
+	}
+	else{
+		upNum= testCase * (upRate)/100;
+	}
+/////////////////////////////////////////////////////////////////////////////
+	if(oneRate == 100){
+		makeOnlyOneTest();
+	}
+	else{
+		oneNum = (Building_Floor * oneRate) / (100 - oneRate);	
+		makeTest();
+	}
+
+	qsort(test, testCase, sizeof(Test_struct), compare_with_size);
+
+	mysql_free_result(res);
+	mysql_close(conn);
+	
+	for(int i =  1; i <= 2; i++){
+  	//현재 등록된 건물의 수만큼 thread를 생성한다.
+		Simul *simul;
+
+		init_simul(&input, &simul);
+		simul->Simul_name = i;
+  		tid_simul = pthread_create(&simul_thr, NULL, simul_f, (void *)simul);
+  		
+  		printf("simul->Simul_name : %d\n",simul->Simul_name);
+  		printf("아이디가 %d인 건물의 엘리베이터가 생성되었습니다.\n",i);
+
+  		if (tid_simul != 0){
+     		perror("thread creation error: ");
+     		exit(0);
+   		}
+
+   		building_pid[i] = (int)simul_thr;
+   		printf("building_pid[i] : %d\n",building_pid[i]);
+   		printf("i : %d \n" ,i);
+	}
+
+
+  	for(int i = 0 ; i < MAX_BUILDING;i++){
+
+		pthread_join(simul_thr, NULL);
+	}
+
+	pthread_join(input_thr, NULL);
+	pthread_join(db_thr, NULL);
+
+
+    return 0;
+}
+
+void *input_f(void *data){
+
+	Input *input = (Input *)data;
+	while(1){
+		if (*input->mode == CALL){
+		}
+		else{
+			scanf(" %c", input->mode);
+		}
+	}
+}
+
+void *simul_f(void *data){
+
+	int Simul_Id;
+	pthread_t id;
+    // 현재 쓰레드의 id 를 얻어서 출력합니다
+	id = pthread_self();
+	int max_floor;
+	int ele_num;
+	int i;
+	
+	int tmp_start_time, tmp_current_floor, tmp_go_floor;
+	long pointer_location;
+	int timeCheck =0;
+
+	FILE *f;
+
+	Simul *simul = (Simul *)data;
+	Elevator *elevators;
+	Elevator *response; // 요청에 응답하는 엘리베이터
+	F_node *location;   // 요청이 들어가는 위치
+	Request current;    // 처리할 요청
+	
+	int testCount=0;
+	int Algo_mode;
+	
+	int person_forecast_latency =0;//현재까지 누적된 예측 평균 대기시간
+	int cumulative_user_number =0;//누적 이용 사람 숫자
+	int person_real_latency =0;//실제 개인이 기다린 대기시간
+	int moved_people_number =0;  //현재까지 이동시킨 누적 사람수
+	int Throughput = 0;
+   
+	//Simul_Id = *(simul->input->req_elevator_id);
+	if(building_pid[1] == (int)id){
+		Simul_Id=1;
+		
+	}
+	else if(building_pid[2] == (int)id){
+		Simul_Id=2;
+
+	}
+/*
+	printf("Simul_Id : %d\n",Simul_Id);
+	printf("building_pid1 : %d\n",building_pid[0]);
+	printf("building_pid2 : %d\n",building_pid[1]);
+	printf("building_pid3 : %d\n",building_pid[2]);
+	printf("id : %d\n",(int)id);
+	exit(0);
+	*/
+	/*
+	Simul_Id =simul ->Simul_name;
+	printf("Simul_Id : %d\n",Simul_Id);
+
+	if(Simul_Id == 2){
+		printf("Simul_Id : %d\n",Simul_Id);
+		exit(0);
+	}*/
+
+	//
+	//exit(0);
+	//char inputMaker[100] ="";
 	//sprintf(inputMaker,"./InputMaker2 %d %d %d %d %d",Test_Num, (Finish_time- Start_time)*60 , Building_Floor, Uprate, OneRate);
 	//system(inputMaker);
 	
-   mysql_free_result(res);
-   mysql_close(conn);
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
  	max_floor = Building_Floor;
@@ -327,14 +429,20 @@ void *simul_f(void *data){
 
 	(*simul).elevators = &elevators;
 	simul->input->mode = (char *)malloc(sizeof(char));
- 	*(simul->input->req_elevator_id) = 3;
+ 	//*(simul->input->req_elevator_id) = 3;
 
- 	f = fopen("testCase2.txt" ,"r");
+ 	//f = fopen("testCase2.txt" ,"r");
 
- 	fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
- 	//printf("Test : %d %d %d\n",tmp_start_time, tmp_current_floor, tmp_go_floor);
+ 	//fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+ 	tmp_start_time = test[testCount].start_time;
+ 	tmp_current_floor = test[testCount].current_floor;
+ 	tmp_go_floor = test[testCount].go_Floor;
+ 	testCount++;
 
- 	
+ 	Algo_mode = DBconector_Simul_Mode(Simul_Id);
+ 	char *char_Algo_mode = malloc(sizeof(char)*100); 	
+ 	sprintf(char_Algo_mode,"%d",Algo_mode);
+
  	while(1){
  		system("clear");
  		printf("\n==========================\n");
@@ -343,17 +451,18 @@ void *simul_f(void *data){
  		printf("|tmp_current_floor : %3d |\n",tmp_current_floor);
  		printf("|tmp_go_floor :  %3d     |\n",tmp_go_floor);
  		printf("==========================\n");
- 		
+ 		//printf("tmp_start_time : %d",tmp_start_time);
+ 		//exit(0);
     	if(tmp_start_time == timeCheck){//현재 시간과 데이터의 시간이 같은 경우
     		*simul->input->mode = CALL;
 
     	}
 		else{//현재 시간과 데이터의 시간이 다른경우
 
- 			print_UI((&elevators),ele_num,max_floor );
+ 			print_UI((&elevators),ele_num,max_floor ,Simul_Id);
  			//usleep(Time_InterNal);
- 			print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number, &person_real_latency);
-			move_elevator(simul->elevators, ele_num, max_floor);
+ 			print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number, &person_real_latency,Throughput,Simul_Id);
+			move_elevator(simul->elevators, ele_num, max_floor, &Throughput);
 			usleep(Time_InterNal);
 			timeCheck++;
 			continue;
@@ -362,12 +471,15 @@ void *simul_f(void *data){
 		if (*simul->input->mode == CALL)
 		{
 			get_request(simul->input,1,tmp_current_floor, tmp_go_floor,1, &cumulative_user_number );
-			fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+			//fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+			tmp_start_time = test[testCount].start_time;
+ 			tmp_current_floor = test[testCount].current_floor;
+ 			tmp_go_floor = test[testCount].go_Floor;
+ 			testCount++;
 		}
 		insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
-		
-		while(!feof(f)){
-
+		while(testCount !=testCase) {
+			//sleep(1);
 			if(tmp_start_time != timeCheck){
 				break;
 			}
@@ -375,17 +487,21 @@ void *simul_f(void *data){
 				*simul->input->mode = CALL;
 				get_request(simul->input,1,tmp_current_floor, tmp_go_floor,1, &cumulative_user_number );
 				insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
-				fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
+				//fscanf(f,"%d %d %d",&tmp_start_time, &tmp_current_floor, &tmp_go_floor);
 				//printf("Test : %d %d %d\n",tmp_start_time, tmp_current_floor, tmp_go_floor);
 				//return 0;
+				
+				tmp_start_time = test[testCount].start_time;
+ 				tmp_current_floor = test[testCount].current_floor;
+ 				tmp_go_floor = test[testCount].go_Floor;
+ 				testCount++;
+				
 			}
 		}
 
 /*
 		if(building_pid[*(simul->input->req_elevator_id)] != (int)id){
-
 			continue;
-
  		}
 */
  		system("clear");
@@ -395,18 +511,20 @@ void *simul_f(void *data){
  		printf("|tmp_current_floor : %3d |\n",tmp_current_floor);
  		printf("|tmp_go_floor :  %3d     |\n",tmp_go_floor);
  		printf("==========================\n");
- 		print_UI((&elevators),ele_num,max_floor );
- 		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number, &person_real_latency);
+ 		
+ 		print_UI((&elevators),ele_num,max_floor,Simul_Id );
+
+ 		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number, &person_real_latency,Throughput,Simul_Id);
        //insert_into_queue(*simul->input->req_current_floor, *simul->input->req_dest_floor, *simul->input->req_num_people, max_floor);
 
-       //
-       ////if (R_list_size(reqs) != 0)
+       
+       //if (R_list_size(reqs) != 0)
        while(R_list_size(reqs) != 0){
        	//여기는 LOOK알고리즘
        	//printf("R_list_size(reqs) : %d\n",R_list_size(reqs));
             current = *R_list_remove(reqs);
             
-            response = LOOK((simul->elevators),ele_num, &current, &person_forecast_latency);
+            //response = LOOK((simul->elevators),ele_num, &current, &person_forecast_latency);
             //look
 
             //response = High_Low((simul->elevators),ele_num, &current, &person_forecast_latency, max_floor);
@@ -421,6 +539,12 @@ void *simul_f(void *data){
             //response = C_SCAN_LOOK((simul->elevators),ele_num, &current, &person_forecast_latency, Uprate);
             //C_SCAN_LOOK
 
+            //response = Existing_Look((simul->elevators),ele_num, &current, &person_forecast_latency);
+            //Existing_Look
+
+            response = All_Scheduling((simul->elevators),ele_num, &current, &person_forecast_latency, max_floor, Uprate,char_Algo_mode);
+            //All_Scheduling
+            
             // 요청에 응답하는 엘리베이터에 정보 추가하기
             // 사람 태울 층 추가하기
             location = In_Look_find_ideal_location(&response, current.start_floor, current.dest_floor, current.start_floor);
@@ -432,25 +556,99 @@ void *simul_f(void *data){
             F_list_insert(response->pending, location, current.dest_floor, current.num_people * -1);
         }
         // 엘리베이터 이동시키기
-        
-       for(int i = 0 ; i<ele_num; i++){
-       	//printf("1\n");
-        	//calculate_real_time(((elevators + sizeof(Elevator)*(i) ))->pending, &person_real_latency);
-        }
 
-        move_elevator(simul->elevators, ele_num, max_floor);
-
+        move_elevator(simul->elevators, ele_num, max_floor, &Throughput);
         usleep(Time_InterNal);
         timeCheck++;
-        if(feof(f) != 0){
+
+        if(testCount == testCase){
 			printf("모든 데이터가 스케쥴링 되었습니다.\n");
 			printf("총 소요시간 : %d\n",timeCheck);
-			exit(0);	
+			exit(0);
 
 		}
     }
 }
+Elevator *LOOK(Elevator **elevators, int num, Request *current, int *person_forecast_latency){
 
+	F_node **ideal;
+	int *time_required;
+	int ideal_index;
+	int size =num;
+	int min = 100000;
+
+	ideal = (F_node **)malloc(sizeof(F_node *) * size);
+ 	time_required = (int *)malloc(sizeof(int) * size);
+
+ 	for(int i = 0 ; i < num;i++){
+
+ 		if((*(elevators + sizeof(Elevator)*(i) ))->pending.tail->prev->floor == -1){
+ 				time_required[i] = INT_MAX;
+ 				continue;
+ 		}
+ 		ideal[i] = In_Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
+  		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
+  		//printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
+  		min = find_min_time(min,time_required[i]);
+
+ 	}
+
+ 	ideal_index = find_min(time_required, size);
+  	free(time_required);
+  	free(ideal);
+
+  	*person_forecast_latency += min;
+  	//printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
+  	return *(elevators + sizeof(Elevator)*ideal_index);
+
+}
+
+Elevator *All_Scheduling(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int floor, int uprate, char *mode){
+
+	F_node **ideal;
+	int *time_required;
+	int ideal_index;
+	int size =num;
+	int min = 100000;
+	char *inputmode = inputFilter(current->start_floor, current->dest_floor, floor);
+
+	ideal = (F_node **)malloc(sizeof(F_node *) * size);
+ 	time_required = (int *)malloc(sizeof(int) * size);
+
+ 	for(int i = 0 ; i<num; i++){
+ 		int tmp_Elevator_Mode = mode[i] -'0';
+ 		//1:Look 2:짝수 3:홀수 4:저층 5:고층 6:상향 7:하향 8:기존 Look
+ 		for(int j = 0 ; j < strlen(inputmode); j++){
+ 
+ 			if(tmp_Elevator_Mode == inputmode[j] - '0'){
+
+ 				//printf("inputmode : %s\n",inputmode);
+ 				//exit(0);
+ 				if((*(elevators + sizeof(Elevator)*(i) ))->pending.tail->prev->floor == -1){
+ 						time_required[i] = INT_MAX;
+ 						continue;
+ 				}
+ 				ideal[i] = In_Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
+  				time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
+  				//printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
+  				min = find_min_time(min,time_required[i]);
+  				break;
+ 			}else{
+ 				time_required[i] = INT_MAX;
+ 				continue;
+ 			}
+ 		}
+ 	}
+
+ 	ideal_index = find_min(time_required, size);
+  	free(time_required);
+  	free(ideal);
+
+  	*person_forecast_latency += min;
+  	//printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
+  	return *(elevators + sizeof(Elevator)*ideal_index);
+
+}
 
 
 Elevator *Even_Odd(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int floor){
@@ -483,6 +681,7 @@ Elevator *Even_Odd(Elevator **elevators, int num, Request *current, int *person_
 	
 	 	}
     }
+
     else if((current->start_floor == 1 && current->dest_floor%2 == 1) || (current->start_floor%2 ==1 && current->dest_floor == 1) || (current->dest_floor%2 == 1) && (current->start_floor%2 ==1)){
 		//홀수 
 		s = num/3;
@@ -561,6 +760,7 @@ Elevator *High_Low(Elevator **elevators, int num, Request *current, int *person_
 	
 	 	}
     }
+
     else if ((current->start_floor > mid_floor) || (current->dest_floor > mid_floor)){
 		//고층  
 		s=num/3;
@@ -607,7 +807,7 @@ Elevator *High_Low(Elevator **elevators, int num, Request *current, int *person_
     return *(elevators + sizeof(Elevator)*(ideal_index + s));
 }
 
-Elevator *LOOK(Elevator **elevators, int num, Request *current, int *person_forecast_latency){
+Elevator *Existing_Look(Elevator **elevators, int num, Request *current, int *person_forecast_latency){
 
 	F_node **ideal;
 	int *time_required;
@@ -619,12 +819,9 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current, int *person_fore
  	time_required = (int *)malloc(sizeof(int) * size);
 
  	for(int i = 0 ; i < num;i++){
-
  		ideal[i] = In_Look_find_ideal_location( (elevators + sizeof(Elevator)*i), current->start_floor, current->dest_floor, current->start_floor);
   		time_required[i] = find_time( (*(elevators + sizeof(Elevator)*i ))->pending, ideal[i],  (*(elevators + sizeof(Elevator)*i ))->current_floor, current->start_floor);
-  		//printf("%d번째 엘리베이터 소요시간: %d초 \n", i + 1, time_required[i]);
   		min = find_min_time(min,time_required[i]);
-
  	}
 
  	ideal_index = find_min(time_required, size);
@@ -632,10 +829,7 @@ Elevator *LOOK(Elevator **elevators, int num, Request *current, int *person_fore
   	free(ideal);
 
   	*person_forecast_latency += min;
-  	//printf("END LOOK\n");
-  	//printf("엘리베이터 %d 호출에 응답 \n", ideal_index + 1);
   	return *(elevators + sizeof(Elevator)*ideal_index);
-
 }
 
 Elevator *C_SCAN(Elevator **elevators, int num, Request *current, int *person_forecast_latency, int uprate){
@@ -814,8 +1008,6 @@ Elevator *C_SCAN_LOOK(Elevator **elevators, int num, Request *current, int *pers
     return *(elevators + sizeof(Elevator)*(ideal_index + s));
 }
 
-
-
 void init_input(Input **input)
 {
     int i, j;
@@ -929,7 +1121,7 @@ void init_elevator_High_low(Elevator **elevators, int num, int floor){
 }
 
 
-void move_elevator(Elevator **elevators, int num, int max_floor)
+void move_elevator(Elevator **elevators, int num, int max_floor, int *Throughput)
 {
     int i;
     int to_ride = 0; // 태워야 할 사람 수
@@ -976,7 +1168,10 @@ void move_elevator(Elevator **elevators, int num, int max_floor)
                             {
                                 (*(elevators + sizeof(Elevator)*i ))->total_people += next_floor->people;
                             }
-                            F_list_remove((*(elevators + sizeof(Elevator)*i ))->pending);
+                            F_node *temp_Node = F_list_remove((*(elevators + sizeof(Elevator)*i ))->pending);
+                            if(temp_Node->people < 0){
+                            	*Throughput += 1;
+                            }
 
                         }
                         else
@@ -1494,7 +1689,8 @@ int F_list_size(F_list list)
     return num;
 }
 
-void F_list_remove(F_list list)
+//void F_list_remove(F_list list)
+F_node *F_list_remove(F_list list)
 {
     F_node *to_remove = list.head->next;
 
@@ -1504,6 +1700,8 @@ void F_list_remove(F_list list)
     to_remove->prev = NULL;
 
     free(to_remove);
+
+    return to_remove;
 }
 
 F_node *F_list_peek(F_list list)
@@ -1523,7 +1721,7 @@ void print_F_list(F_list list)
 
 void calculate_real_time(F_list list, int *person_real_latency)
 {
-	//printf("1.2\n");
+
     F_node *curr = list.head->next;
     //printf("1.3\n");
     while (curr != list.tail)
@@ -1545,11 +1743,6 @@ void calculate_real_time(F_list list, int *person_real_latency)
 
 int find_min(int *arr, int n)
 {
-    // 우선순위 규칙
-    // 1. 시간이 최소로 걸리는 엘리베이터
-    // 2. 운행 범위가 좁은 엘리베이터(저층 > 전층)
-    // 3. 현재 사람 수가 적은 엘리베이터(이미 만원인 엘리베이터는 제외)
-    // 4. 인덱스가 적은 엘리베이터
 
     int i;
     int min = 0;
@@ -1566,11 +1759,13 @@ int find_min(int *arr, int n)
 
 
 
-void print_UI(Elevator **elevators, int num, int floor_num)
+void print_UI(Elevator **elevators, int num, int floor_num, int Simul_Id)
 {
+
     int i, j;
     for (i = 0; i < floor_num; i++)
     {
+    	
         printf("    -------------"); //윗칸
 
         for(int i = 0; i < num-1;i++){
@@ -1579,11 +1774,15 @@ void print_UI(Elevator **elevators, int num, int floor_num)
         }
         printf("\n");
         printf("%2dF ", floor_num - i);
+        
         for (j = 0; j < num; j++)
         {
+        	
             if ( (*(elevators + sizeof(Elevator)*j ))->current_floor == floor_num - i)
             {
-            	//DB_Elevator_updater(1, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
+            	DB_Simul_Current(Simul_Id, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
+            	DB_Simul_People(Simul_Id, j+1, (*(elevators + sizeof(Elevator)*j ))->current_people);
+            	//exit(0);
                 printf("|");
                 if ((*(elevators + sizeof(Elevator)*j ))->current_floor == (*(elevators + sizeof(Elevator)*j ))->next_dest)
                 {
@@ -1625,7 +1824,7 @@ void print_UI(Elevator **elevators, int num, int floor_num)
 
 }
 
-void print_elevator_info(Elevator **elevators, int num , int person_forecast_latency, int cumulative_user_number, int *person_real_latency)
+void print_elevator_info(Elevator **elevators, int num , int person_forecast_latency, int cumulative_user_number, int *person_real_latency, int Throughput, int Simul_Id)
 {
     int i;
     for (i = 0; i < num; i++)
@@ -1636,7 +1835,7 @@ void print_elevator_info(Elevator **elevators, int num , int person_forecast_lat
         }
         else if ((*(elevators + sizeof(Elevator)*i ))->current_floor == (*(elevators + sizeof(Elevator)*i ))->next_dest){
             printf("대기 중 | ");
-        }
+        }                                           
         else
         {
             printf("운행 중 | ");
@@ -1651,12 +1850,14 @@ void print_elevator_info(Elevator **elevators, int num , int person_forecast_lat
     printf("\n====================================\n");
     printf("|예측 대기시간 누적       |%6d초|\n",person_forecast_latency);
     printf("|실제 대기시간 누적       |%6d초|\n",*person_real_latency);
+    printf("|처리량                   |%6d명|\n",Throughput);
     printf("|누적 이용 사람 숫자      |%6d명|\n",cumulative_user_number);
     printf("====================================\n");
     
     double person_forecast_latency_average;
     double person_real_latency_average;
-    
+    double accuration_latency_average;
+
     if(cumulative_user_number == 0){
     	person_forecast_latency_average =0;
     	person_real_latency_average=0;
@@ -1664,19 +1865,19 @@ void print_elevator_info(Elevator **elevators, int num , int person_forecast_lat
     else{
     	person_forecast_latency_average = ((double)person_forecast_latency/(double)cumulative_user_number) /*+ ((double)person_forecast_latency % (double)cumulative_user_number)*/;	
     	person_real_latency_average =((double)*person_real_latency/(double)cumulative_user_number) ;
+    	accuration_latency_average = ((double)person_forecast_latency_average/(double)person_real_latency_average)*100 ;
     }
-    
+    printf("|예상 대기시간 정확도     | %3.2f  |\n",accuration_latency_average);
     printf("|개인당 평균 예상 대기시간| %3.3f초|\n",person_forecast_latency_average);
     printf("|개인당 평균 실제 대기시간| %3.3f초|\n",person_real_latency_average);
     printf("====================================\n");
-
+    DBconector_Simul_Result(Simul_Id,person_forecast_latency,*person_real_latency,cumulative_user_number,Throughput, person_forecast_latency_average, person_real_latency_average, accuration_latency_average);
 }
 
 void get_request(Input *input, int elevator_id, int current_floor, int dest_floor, int people_num, int *cumulative_user_number)
 {
     while (1)
     {
-        //printf("엘리베이터 아이디, 현재 층, 목적 층, 몇 명이 타는지 입력하시오. \n");
         fflush(stdout);
 
         //*input->req_elevator_id =  elevator_id;
@@ -1713,4 +1914,123 @@ int makeUpNum(int num, int uprate){
 		return temp;
 	}
 }
+
+char *inputFilter(int start_floor, int dest_floor, int floor){
+
+	int mid_floor = floor/2;
+	char *mode = malloc(sizeof(char)*10);
+	mode[0] ='\0';
+
+	strcat(mode,"1"); 
+
+	//printf("mode : %s\n",mode);
+
+	int dir = dest_floor - start_floor;
+
+	if((start_floor == 1 && dest_floor%2 == 0) || (start_floor%2 ==0 && dest_floor == 1) || (dest_floor%2 == 0) && (start_floor%2 ==0)){
+    	strcat(mode,"2"); 	
+    }
+    if((start_floor == 1 && dest_floor%2 == 1) || (start_floor%2 ==1 && dest_floor == 1) || (dest_floor%2 == 1) && (start_floor%2 ==1)){
+    	strcat(mode,"3");
+    }
+    if(start_floor<mid_floor && dest_floor<mid_floor){
+    	strcat(mode,"4");	
+    }
+    if(start_floor > mid_floor && dest_floor > mid_floor){
+    	strcat(mode,"5");	
+    }
+    if(dir >0){
+    	strcat(mode,"6");	
+    }
+    if(dir<0){
+    	strcat(mode,"7");	
+    }
+    //strcat(mode,"8");
+    //printf("mode : %s\n",mode);
+    //exit(0);
+    return mode;
+}
+
+
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+void makeTest(){
+
+	for(int i = 0 ;i < testCase ; i++){
+				
+		test[i].start_time = rand()%timeInterval;
+		//printf("test[i].start_time : %d\n",test[i].start_time);
+		//sleep(1000);
+		if(i < upNum){//올라가는 비율만큼 만든다.
+			test[i].current_floor = rand()%(Building_Floor+oneNum);
+
+			if(test[i].current_floor >= Building_Floor){
+				test[i].current_floor =1;
+			}
+
+			while(1){
+				if(test[i].current_floor == 0){
+					test[i].current_floor = rand()%Building_Floor;
+				}
+				else break;
+
+			}
+			test[i].go_Floor = rand()%(Building_Floor- test[i].current_floor) + test[i].current_floor +1;
+		}
+		else{
+			test[i].go_Floor = rand()%(Building_Floor+oneNum);
+
+			if(test[i].go_Floor >= Building_Floor){
+				test[i].go_Floor =1;
+			}
+
+			while(1){
+				if(test[i].go_Floor == 0){
+					test[i].go_Floor = rand()%Building_Floor;
+				}
+				else break;
+
+			}
+			test[i].current_floor = rand()%(Building_Floor- test[i].go_Floor) + test[i].go_Floor +1;
+		}
+	}
+}
+
+void makeOnlyOneTest(){
+
+	for(int i = 0 ;i < testCase ; i++){
+		test[i].start_time = rand()%timeInterval;
+
+		if(i < upNum){//올라가는 비율만큼 만든다.
+			test[i].current_floor = 1;
+			test[i].go_Floor = rand()%(Building_Floor- test[i].current_floor) + test[i].current_floor +1;
+		}
+		else{
+
+			test[i].current_floor = rand()%Building_Floor +1;
+
+			while(1){
+				if(test[i].current_floor == 1 || test[i].current_floor == 0){
+					test[i].current_floor = rand()%Building_Floor;
+			
+				}
+				else break;
+			}
+
+			test[i].go_Floor = 1;
+
+		}
+		//printf("test[i].go_Floor : %d\n",test[i].go_Floor);
+	}
+}
+
+int compare_with_size(const void *a, const void  *b)
+{
+    Test_struct* ptr_a = (Test_struct*)a;
+    Test_struct* ptr_b = (Test_struct*)b;
+    
+    if (ptr_a->start_time < ptr_b->start_time) return -1;
+    else if (ptr_a->start_time == ptr_b->start_time) return 0;
+    else return 1;
+}
