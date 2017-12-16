@@ -8,10 +8,23 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <termios.h>
+#include <limits.h>
+#include <math.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include "/usr/include/mysql/mysql.h"
 #include <time.h>
 
 #define ASCII 48
 #define MAX 100000
+
+void DB_testcase(int time, int start, int dest);
+void DB_delete();
 
 /**/
 typedef struct _TESTCASE
@@ -44,6 +57,7 @@ int start_time, current_floor, go_Floor, re_start_time, re_go_Floor;
 	
 Test_struct test[MAX];
 
+FILE *f;
 int upNum; 
 int oneNum;
 
@@ -53,8 +67,9 @@ void makeOnlyOneTest();
 int main(int argc, char **argv)
 {
 	char *result = malloc(sizeof(char)*10);
-	
-	FILE *f;
+
+
+	DB_delete();
 	inputNum = argc -1;
 	testCase = atoi(argv[1]); //-ASCII;
 	timeInterval = atoi(argv[2]);
@@ -64,7 +79,7 @@ int main(int argc, char **argv)
 	
 	f=fopen("testCase2.txt" , "w");
 	srand(time(NULL));
-
+	//printf("@@@@@@@@@@@@@@@@@\n");
 	if(upRate == 0){
 		upNum = 0;
 	}
@@ -84,10 +99,9 @@ int main(int argc, char **argv)
 	qsort(test, testCase, sizeof(Test_struct), compare_with_size);
 
 	for(int i = 0 ;i < testCase ; i++){
-		sprintf(result,"%d %d %d",test[i].start_time, test[i].current_floor, test[i].go_Floor );
-		printf("%s\n",result);
-		//fprintf(f,"%s\n",result);
-		fputs(result,f);
+		//sprintf(result,"%d %d %d\n",test[i].start_time, test[i].current_floor, test[i].go_Floor );
+		//fprintf(f,"%s",result);
+		DB_testcase(test[i].start_time, test[i].current_floor, test[i].go_Floor);
 	}
 	fclose(f);
 
@@ -130,24 +144,6 @@ void makeTest(){
 
 			}
 			test[i].current_floor = rand()%(Building_Floor- test[i].go_Floor) + test[i].go_Floor +1;
-			/*
-			test[i].current_floor = rand()%Building_Floor +1;
-
-			while(1){
-				if(test[i].current_floor == 1 || test[i].current_floor == 0){
-					test[i].current_floor = rand()%Building_Floor;
-				}
-				else break;
-			}
-
-			while(1){
-				test[i].go_Floor = rand()%(test[i].current_floor);
-				if(test[i].go_Floor == 0){
-					test[i].go_Floor = rand()%(test[i].current_floor);
-				
-				}
-				else break;
-			}*/
 		}
 	}
 }
@@ -177,4 +173,105 @@ void makeOnlyOneTest(){
 
 		}
 	}
+}
+
+void DB_testcase(int time, int start, int dest){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"INSERT INTO testcase VALUES(%d,%d,%d);",time, start, dest);
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
+
+void DB_delete(){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"DELETE FROM testcase ;");
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
 }

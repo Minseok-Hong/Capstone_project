@@ -23,7 +23,7 @@
 #define MAX_PEOPLE 15 // 엘리베이터 정원
 #define MAX_TOTAL 150 // 점검 받아야하는 수
 
-int Simul_Id=1;
+int Simul_Id=2;
 int Time_InterNal =100000;
 int timeCheck =0;
 int testCount=0;
@@ -233,9 +233,9 @@ int main()
 		}
 		usleep(Time_InterNal);
 	}
-
-//	DB_Simul_Info_Flag();
-//	DB_Simul_Mode_Flag();
+	DB_Simul_Info_Flag();
+	DB_Simul_Mode_Flag();
+	
 	for(int i =  1; i <= 1; i++){
   	//현재 등록된 건물의 수만큼 thread를 생성한다.
 		Simul *simul;
@@ -396,8 +396,8 @@ void *simul_f(void *data){
 	mysql_free_result(res);
 	mysql_close(conn);
 	char inputMaker[100] ="";
-	sprintf(inputMaker,"./InputMaker2 %d %d %d %d %d",Test_Num, (Finish_time- Start_time)*60 , Building_Floor, Uprate, OneRate);
-	system(inputMaker);
+	//sprintf(inputMaker,"./InputMaker2 %d %d %d %d %d",Test_Num, (Finish_time- Start_time)*60 , Building_Floor, Uprate, OneRate);
+	//system(inputMaker);
 
 	DBconector_testcase_pick();
 	testCount=0;
@@ -632,7 +632,7 @@ Elevator *All_Scheduling(Elevator **elevators, int num, Request *current, int *p
  	}
  	//sleep(1);
  	ideal_index = find_min(time_required, size);
-  	min = time_required[ideal_index];
+ 	min = time_required[ideal_index];
   	free(time_required);
   	free(ideal);
   	
@@ -1775,7 +1775,6 @@ void print_UI(Elevator **elevators, int num, int floor_num, int Simul_Id)
             {
             	DB_Simul_Current(Simul_Id, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
             	DB_Simul_People(Simul_Id, j+1, (*(elevators + sizeof(Elevator)*j ))->current_people);
-            	//printf("%d %d %d\n", Simul_Id, j+1, (*(elevators + sizeof(Elevator)*j ))->current_floor);
             	//exit(0);
                 printf("|");
                 if ((*(elevators + sizeof(Elevator)*j ))->current_floor == (*(elevators + sizeof(Elevator)*j ))->next_dest)

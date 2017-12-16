@@ -1,0 +1,5 @@
+sudo : required
+
+language : php
+
+after_success : echo "Test success"

@@ -15,7 +15,7 @@
 #define CALL 'A'
 
 #define BUFF_SIZE   1024
-#define MAX_BUILDING 2 //서버에서 가동할 수 있는 최대 빌딩의 수
+#define MAX_BUILDING 4  //서버에서 가동할 수 있는 최대 빌딩의 수
 #define MAX_PEOPLE 15 // 엘리베이터 정원
 #define MAX_TOTAL 150 // 점검 받아야하는 수
 
@@ -146,12 +146,11 @@ int find_min_time(int numA, int numB);
 void print_F_list(F_list list);
 void print_elevator_info(Elevator **elevators, int num , int person_forecast_latency,int cumulative_user_number);
 void print_UI(int building_id, Elevator **elevators, int num, int floor_num);
-
-//////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 R_list reqs;
 int flag = 0;
-///////////////////////////////////////////////////////////////////////
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 int main()
 {
 
@@ -250,9 +249,12 @@ void *simul_f(void *data){
 	int person_real_latency =0;//실제 개인이 기다린 대기시간
 	int moved_people_number =0;  //현재까지 이동시킨 누적 사람수
    
- 	max_floor = DBconector_floor(1);
- 	ele_num = DBconector_ele_num(1);
+    max_floor = DBconector_floor(*(simul->input->req_elevator_id));
+ 	ele_num = DBconector_ele_num(*(simul->input->req_elevator_id));
 
+	max_floor =10;
+	ele_num =2;
+ 
 	init_elevator(&elevators,ele_num);
 	(*simul).elevators = &elevators;
 	simul->input->mode = (char *)malloc(sizeof(char));
@@ -308,6 +310,7 @@ void *simul_f(void *data){
 			continue;
  		}
 
+ 		
  		system("clear");
  		print_UI(*(simul->input->req_elevator_id),(&elevators),ele_num,max_floor );
  		print_elevator_info((&elevators),ele_num, person_forecast_latency,cumulative_user_number);

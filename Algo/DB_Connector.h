@@ -1,3 +1,5 @@
+void DB_Simul_Info_Flag();
+void DB_Simul_Mode_Flag();
 void DB_Elevator_updater(int building_id, int Elevator_Id, int current_floor);
 void DB_Calling_updater(char *userID, int Time, int elevator_id);
 void DB_Flag_updater(char *userID);

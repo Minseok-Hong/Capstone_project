@@ -782,3 +782,105 @@ void DB_Simul_People(int Simul_ID, int ele_id, int People_Num){
    mysql_close(conn);
 
 }
+
+
+void DB_Simul_Mode_Flag(){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"Update SimulMode SET Flag = 0;");
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
+
+
+void DB_Simul_Info_Flag(){
+
+	MYSQL *conn;
+ 	MYSQL_RES *res;
+ 	MYSQL_ROW row;
+
+ 	char *server = "localhost";
+ 	char *user = "root";
+ 	char *password = "root";
+ 	char *database = "capstone";
+
+ 	int tmp;
+
+ 	conn = (MYSQL *)malloc(sizeof(MYSQL )*1);
+ 	res = (MYSQL_RES *)malloc(sizeof(MYSQL_RES )*4);
+ 	row = (MYSQL_ROW )malloc(sizeof(MYSQL_ROW )*5);
+
+	conn = mysql_init(NULL);
+
+ 	if(!mysql_real_connect(conn,server,user,password,database,0,NULL,0)){
+ 		exit(1);
+  	}
+
+  	 if(mysql_query(conn,"show tables")){
+
+   		exit(1);
+   	}
+
+	res = mysql_use_result(conn);
+  	////printf("MYSQL Tables in mysql database : ");
+  	while((row = mysql_fetch_row(res)) != NULL){
+		//printf("%s ",row[0]);
+  	}
+
+
+	char sql[100] = "";
+	sprintf( sql,"Update SimulInfo SET Flag  = 0;");
+
+  	if(mysql_query(conn,sql))
+  	{
+  		//printf("###UPDATA ERROR!!!!!!!\n");
+  		//return 1;
+  	}
+  	//printf("########%s\n",sql);
+
+   mysql_free_result(res);
+   mysql_close(conn);
+
+}
